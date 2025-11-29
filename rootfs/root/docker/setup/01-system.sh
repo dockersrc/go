@@ -7,15 +7,15 @@
 # @@License          :  MIT
 # @@Copyright        :  Copyright 2025 CasjaysDev
 # @@Created          :  Sat Nov 29 11:53:10 AM EST 2025
-# @@File             :  05-custom.sh
-# @@Description      :  script to run custom
+# @@File             :  01-system.sh
+# @@Description      :  script to run system
 # @@Changelog        :  newScript
 # @@TODO             :  Refactor code
 # @@Other            :  N/A
 # @@Resource         :  N/A
 # @@Terminal App     :  yes
 # @@sudo/root        :  yes
-# @@Template         :  templates/dockerfiles/init_scripts/05-custom.sh
+# @@Template         :  templates/dockerfiles/init_scripts/01-system.sh
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # shellcheck disable=SC1001,SC1003,SC2001,SC2003,SC2016,SC2031,SC2090,SC2115,SC2120,SC2155,SC2199,SC2229,SC2317,SC2329
 # - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -7,15 +7,15 @@
 # @@License          :  MIT
 # @@Copyright        :  Copyright 2025 CasjaysDev
 # @@Created          :  Sat Nov 29 11:53:10 AM EST 2025
-# @@File             :  05-custom.sh
-# @@Description      :  script to run custom
+# @@File             :  00-init.sh
+# @@Description      :  script to run init
 # @@Changelog        :  newScript
 # @@TODO             :  Refactor code
 # @@Other            :  N/A
 # @@Resource         :  N/A
 # @@Terminal App     :  yes
 # @@sudo/root        :  yes
-# @@Template         :  templates/dockerfiles/init_scripts/05-custom.sh
+# @@Template         :  templates/dockerfiles/init_scripts/00-init.sh
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # shellcheck disable=SC1001,SC1003,SC2001,SC2003,SC2016,SC2031,SC2090,SC2115,SC2120,SC2155,SC2199,SC2229,SC2317,SC2329
 # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,7 +28,9 @@ exitCode=0
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Predefined actions
-
+if [ -d "/usr/local/share/template-files/data" ]; then rm -Rf "/usr/local/share/template-files/data"/*; fi
+if [ -d "/usr/local/share/template-files/config" ]; then rm -Rf "/usr/local/share/template-files/config"/*; fi
+if [ -d "/usr/local/share/template-files/defaults" ]; then rm -Rf "/usr/local/share/template-files/defaults"/*; fi
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Main script
 

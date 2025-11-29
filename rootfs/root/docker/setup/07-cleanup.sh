@@ -7,15 +7,15 @@
 # @@License          :  MIT
 # @@Copyright        :  Copyright 2025 CasjaysDev
 # @@Created          :  Sat Nov 29 11:53:10 AM EST 2025
-# @@File             :  05-custom.sh
-# @@Description      :  script to run custom
+# @@File             :  07-cleanup.sh
+# @@Description      :  script to run cleanup
 # @@Changelog        :  newScript
 # @@TODO             :  Refactor code
 # @@Other            :  N/A
 # @@Resource         :  N/A
 # @@Terminal App     :  yes
 # @@sudo/root        :  yes
-# @@Template         :  templates/dockerfiles/init_scripts/05-custom.sh
+# @@Template         :  templates/dockerfiles/init_scripts/07-cleanup.sh
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # shellcheck disable=SC1001,SC1003,SC2001,SC2003,SC2016,SC2031,SC2090,SC2115,SC2120,SC2155,SC2199,SC2229,SC2317,SC2329
 # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -23,12 +23,16 @@
 set -o pipefail
 [ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -x$DEBUGGER_OPTIONS
 # - - - - - - - - - - - - - - - - - - - - - - - - -
+# Load functions
+__find_and_remove() { [ -z "$1" ] || find "${2:-/etc}" -iname "$1" -exec rm -Rf {} \; 2>/dev/null; }
+# - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set env variables
 exitCode=0
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Predefined actions
-
+if [ -d "/tmp" ]; then rm -Rf "/tmp"/*; fi
+if [ -d "$HOME/.cache" ]; then rm -Rf "$HOME/.cache"; fi
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Main script
 
