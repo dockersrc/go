@@ -54,7 +54,7 @@ ARG PHP_SERVER
 ARG SHELL_OPTS
 ARG PATH
 
-ARG PACK_LIST="git make bash ca-certificates openssh-client curl wget tar tzdata jq build-base gcc musl-dev pkgconf openssl-dev libffi-dev zlib-dev linux-headers protobuf protobuf-dev"
+ARG PACK_LIST="git make bash tini ca-certificates openssh-client curl wget tar tzdata jq build-base gcc musl-dev pkgconf openssl-dev libffi-dev zlib-dev linux-headers protobuf protobuf-dev"
 
 ENV ENV=~/.profile
 ENV SHELL="/bin/sh"
