@@ -40,10 +40,32 @@ export GOBIN="/usr/local/bin"
 export PATH="${GOBIN}:${PATH}"
 export CGO_ENABLED=0
 export GOTOOLCHAIN=auto
+export GOMAXPROCS="${GOMAXPROCS:-2}"
+export GOMEMLIMIT="${GOMEMLIMIT:-1GiB}"
+export GOFLAGS="${GOFLAGS:+${GOFLAGS} }-p=1"
 mkdir -p "$GOPATH" "$GOPATH/bin" "$GOPATH/cache" "$GOPATH/pkg/mod"
 
 if command -v go >/dev/null 2>&1; then
   echo "Installing Go developer tools with $(go version)"
+  tool_install_count=0
+
+  install_go_tool() {
+    local tool="$1"
+
+    echo "go install $tool"
+    # Best-effort: don't fail the build if a single upstream tool has
+    # stale deps incompatible with the current Go release. The rest of
+    # the kitchen-sink installs cleanly and the user can manually
+    # `go install` whichever tools they need at runtime against their
+    # own version pin.
+    go install "$tool" || echo "  WARN: skipping $tool (install failed)" >&2
+
+    tool_install_count=$((tool_install_count + 1))
+    if [ "$tool_install_count" -ge 5 ]; then
+      go clean -cache -testcache 2>/dev/null || true
+      tool_install_count=0
+    fi
+  }
 
   for tool in \
     "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest" \
@@ -99,13 +121,7 @@ if command -v go >/dev/null 2>&1; then
     "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest" \
     "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@latest" \
     ; do
-    echo "go install $tool"
-    # Best-effort: don't fail the build if a single upstream tool has
-    # stale deps incompatible with the current Go release. The rest of
-    # the kitchen-sink installs cleanly and the user can manually
-    # `go install` whichever tools they need at runtime against their
-    # own version pin.
-    go install "$tool" || echo "  WARN: skipping $tool (install failed)" >&2
+    install_go_tool "$tool"
   done
 
   # migrate: needs build tags for DB driver compilation. Limited to
@@ -121,6 +137,7 @@ if command -v go >/dev/null 2>&1; then
     || echo "  WARN: skipping migrate (install failed)" >&2
 
   # Drop the module cache; it's not needed in the final image.
+  go clean -testcache 2>/dev/null || true
   go clean -modcache 2>/dev/null || true
   go clean -cache 2>/dev/null || true
   rm -rf "$GOPATH/pkg" "$GOPATH/src" 2>/dev/null || true
