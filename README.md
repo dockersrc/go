@@ -45,8 +45,8 @@ dockermgr update go
 ## Install and run container
   
 ```shell
-dockerHome="/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/rootfs"
-mkdir -p "/var/lib/srv/$USER/docker/go/rootfs"
+dockerHome="/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes"
+mkdir -p "/var/lib/srv/$USER/docker/go/volumes"
 git clone "https://github.com/dockermgr/go" "$HOME/.local/share/CasjaysDev/dockermgr/go"
 cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/go/rootfs/." "$dockerHome/"
 docker run -d \
@@ -72,8 +72,8 @@ services:
       - TZ=America/New_York
       - HOSTNAME=go
     volumes:
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/rootfs/data:/data:z"
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/rootfs/config:/config:z"
+      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes/data:/data:z"
+      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes/config:/config:z"
     restart: always
 ```
   
