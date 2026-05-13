@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python3 -c 'import json,sys *)",
-      "Bash(/tmp/dockersrc-test/go-hello/bin/hello-linux-amd64 *)",
-      "Read(//root/Projects/github/dockersrc/alpine/**)"
-    ]
-  }
-}
