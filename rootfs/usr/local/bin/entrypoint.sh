@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202605241245-git
+##@Version           :  202605260122-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  WTFPL
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2026 Jason Hempstead, Casjays Developments
-# @@Created          :  Sunday, May 24, 2026 20:59 EDT
+# @@Created          :  Friday, May 29, 2026 22:19 EDT
 # @@File             :  entrypoint.sh
 # @@Description      :  Entrypoint file for alpine
 # @@Changelog        :  New script
@@ -61,7 +61,7 @@ case "$1" in
 # Help message
 -h | --help)
   shift 1
-  echo 'Docker container for '$CONTAINER_NAME''
+  echo "Docker container for $CONTAINER_NAME"
   echo "Usage: $CONTAINER_NAME [help tail cron exec start init shell procs ports healthcheck backup command]"
   echo ""
   exit 0

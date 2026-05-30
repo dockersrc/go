@@ -1,7 +1,7 @@
 # Docker image for go using the alpine template
 ARG IMAGE_NAME="go"
 ARG PHP_SERVER="go"
-ARG BUILD_DATE="202604221922"
+ARG BUILD_DATE="202605292219"
 ARG LANGUAGE="en_US.UTF-8"
 ARG TIMEZONE="America/New_York"
 ARG WWW_ROOT_DIR="/usr/local/share/httpd/default"
@@ -123,7 +123,7 @@ RUN echo "Updating system files "; \
   echo 'hosts: files dns' >"/etc/nsswitch.conf"; \
   [ "$PHP_VERSION" = "system" ] && PHP_VERSION="php" || true; \
   PHP_BIN="$(command -v ${PHP_VERSION} 2>/dev/null || true)"; \
-  PHP_FPM="$(ls /usr/*bin/php*fpm* 2>/dev/null || true)"; \
+  set -- /usr/*bin/php*fpm*; [ -e "$1" ] && PHP_FPM="$1" || PHP_FPM=""; \
   pip_bin="$(command -v python3 2>/dev/null || command -v python2 2>/dev/null || command -v python 2>/dev/null || true)"; \
   py_version="$(command $pip_bin --version | sed 's|[pP]ython ||g' | awk -F '.' '{print $1$2}' | grep '[0-9]' || true)"; \
   [ "$py_version" -gt "310" ] && pip_opts="--break-system-packages " || pip_opts=""; \
@@ -180,7 +180,7 @@ RUN echo "Deleting unneeded files"; \
   rm -rf /lib/systemd/system/sockets.target.wants/*udev* || true; \
   rm -rf /lib/systemd/system/sockets.target.wants/*initctl* || true; \
   rm -Rf /usr/share/doc/* /var/tmp/* /var/cache/*/* /root/.cache/* /usr/share/info/* /tmp/* || true; \
-  if [ -d "/lib/systemd/system/sysinit.target.wants" ];then cd "/lib/systemd/system/sysinit.target.wants" && rm -f $(ls | grep -v systemd-tmpfiles-setup);fi; \
+  if [ -d "/lib/systemd/system/sysinit.target.wants" ];then cd "/lib/systemd/system/sysinit.target.wants" && for want_file in *; do [ "$want_file" = "systemd-tmpfiles-setup" ] || rm -f "$want_file"; done; fi; \
   if [ -f "/root/docker/setup/07-cleanup.sh" ];then echo "Running the cleanup script";/root/docker/setup/07-cleanup.sh||{ echo "Failed to execute /root/docker/setup/07-cleanup.sh" >&2 && exit 10; };echo "Done running the cleanup script";fi; \
   echo ""
 
