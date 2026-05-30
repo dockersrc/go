@@ -58,7 +58,7 @@ ARG PACK_LIST="git make bash tini ca-certificates openssh-client curl wget tar t
 
 ENV ENV=~/.profile
 ENV SHELL="/bin/sh"
-ENV PATH="/usr/local/share/go/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/usr/local/share/go/bin:${PATH}"
 ENV TZ="${TIMEZONE}"
 ENV TIMEZONE="${TZ}"
 ENV LANG="${LANGUAGE}"
@@ -234,7 +234,7 @@ LABEL com.github.containers.toolbox="false"
 
 ENV ENV=~/.bashrc
 ENV USER="${USER}"
-ENV PATH="/usr/local/share/go/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/usr/local/share/go/bin:${PATH}"
 ENV TZ="${TIMEZONE}"
 ENV SHELL="/bin/bash"
 ENV TIMEZONE="${TZ}"
