@@ -20,7 +20,7 @@ ARG PHP_VERSION="system"
 ARG NODE_VERSION="system"
 ARG NODE_MANAGER="system"
 
-ARG IMAGE_REPO="casjaysdevdocker/go"
+ARG IMAGE_REPO="casjaysdev/go"
 ARG IMAGE_VERSION="latest"
 ARG CONTAINER_VERSION=""
 
@@ -58,7 +58,7 @@ ARG PACK_LIST="git make bash tini ca-certificates openssh-client curl wget tar t
 
 ENV ENV=~/.profile
 ENV SHELL="/bin/sh"
-ENV PATH="/usr/local/go/bin:/usr/local/share/go/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/usr/local/bin:/usr/local/share/go/bin:${PATH}"
 ENV TZ="${TIMEZONE}"
 ENV TIMEZONE="${TZ}"
 ENV LANG="${LANGUAGE}"
@@ -234,7 +234,7 @@ LABEL com.github.containers.toolbox="false"
 
 ENV ENV=~/.bashrc
 ENV USER="${USER}"
-ENV PATH="/usr/local/go/bin:/usr/local/share/go/bin:${PATH}"
+ENV PATH="/usr/local/go/bin:/usr/local/bin:/usr/local/share/go/bin:${PATH}"
 ENV TZ="${TIMEZONE}"
 ENV SHELL="/bin/bash"
 ENV TIMEZONE="${TZ}"

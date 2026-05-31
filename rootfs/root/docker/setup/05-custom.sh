@@ -132,6 +132,12 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 # gRPC Go code generator
 go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
+# Modern protobuf toolchain: lint, format, breaking-change detection, managed deps
+go install github.com/bufbuild/buf/cmd/buf@latest
+
+# DB schema migration runner (Go-native, supports Go and SQL migrations)
+go install github.com/pressly/goose/v3/cmd/goose@latest
+
 echo "Go tooling installed"
 
 # Strip the module download cache and ephemeral build cache from this layer.

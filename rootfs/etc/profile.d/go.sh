@@ -14,12 +14,19 @@ export GOCACHE="${GOCACHE:-${GOPATH}/cache}"
 export CGO_ENABLED="${CGO_ENABLED:-0}"
 export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
 
+# Go distribution bin first, then baked tools, then GOPATH/bin last so a
+# volume-mounted $GOPATH/bin never shadows baked image tools.
 case ":${PATH}:" in
   *":/usr/local/go/bin:"*) ;;
   *) export PATH="/usr/local/go/bin:${PATH}" ;;
 esac
 
 case ":${PATH}:" in
+  *":/usr/local/bin:"*) ;;
+  *) export PATH="/usr/local/bin:${PATH}" ;;
+esac
+
+case ":${PATH}:" in
   *":${GOPATH}/bin:"*) ;;
-  *) export PATH="${GOPATH}/bin:${PATH}" ;;
+  *) export PATH="${PATH}:${GOPATH}/bin" ;;
 esac

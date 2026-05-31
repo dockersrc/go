@@ -1,193 +1,277 @@
-## 👋 Welcome to go 🚀  
+# go
 
-A Docker image for building Go projects. Installs the latest stable Go
-toolchain straight from `go.dev` at image build time (SHA256-verified)
-so the image is never behind upstream. Includes a comprehensive set of
-dev tools and the common build deps (git, make, build-base, openssl-dev,
-libffi-dev, zlib-dev, linux-headers, protobuf, jq).
+A Docker image that ships the **latest stable Go toolchain** (fetched from
+`go.dev` at build time) together with a complete set of tools for building,
+testing, linting, debugging, and releasing Go projects. The image is based on
+Alpine and produces fully static binaries by default (`CGO_ENABLED=0`); the
+CGO build-deps (`gcc`, `musl-dev`, `openssl-dev`, etc.) are still present so
+you can opt in per build.
 
-The image is a build environment — it idles after init so you can
-`docker exec` into it or use `docker compose exec` for one-off `go
-build`, `go test`, `golangci-lint run`, etc.
+---
 
-### What's included
-
-- **Linters / QA**: golangci-lint, staticcheck, govulncheck, gosec,
-  errcheck, ineffassign, gocyclo, golint, revive, nilaway, deadcode
-- **Formatting / imports**: gofmt (bundled), goimports, gofumpt, gci,
-  golines
-- **LSP / nav**: gopls, guru, gorename, callgraph
-- **Debug / diag**: dlv, gops
-- **Codegen**: stringer, mockgen, mockery, wire, sqlc, oapi-codegen,
-  gotests, impl, gomodifytags, enumer, easyjson
-- **Protobuf / gRPC**: buf, protoc-gen-go, protoc-gen-go-grpc,
-  protoc-gen-validate, protoc-gen-grpc-gateway, protoc-gen-openapiv2
-- **DB migrations**: migrate (postgres/pgx/mysql/sqlite), goose
-- **Test / bench / coverage**: gotestsum, richgo, benchstat,
-  go-junit-report, gocover-cobertura, gcov2lcov
-- **Build / release / runners**: goreleaser, ko, task, mage, air,
-  godoc, swag
-
-  
-## Install my system scripts  
+## 📦 Pull
 
 ```shell
- sudo bash -c "$(curl -q -LSsf "https://github.com/systemmgr/installer/raw/main/install.sh")"
- sudo systemmgr --config && sudo systemmgr install scripts  
+docker pull casjaysdevdocker/go:latest
 ```
-  
-## Automatic install/update  
-  
-```shell
-dockermgr update go
-```
-  
-## Install and run container
-  
-```shell
-dockerHome="/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes"
-mkdir -p "/var/lib/srv/$USER/docker/go/volumes"
-git clone "https://github.com/dockermgr/go" "$HOME/.local/share/CasjaysDev/dockermgr/go"
-cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/go/rootfs/." "$dockerHome/"
-docker run -d \
---restart always \
---privileged \
---name casjaysdevdocker-go-latest \
---hostname go \
--e TZ=${TIMEZONE:-America/New_York} \
--v "$dockerHome/data:/data:z" \
--v "$dockerHome/config:/config:z" \
-casjaysdevdocker/go:latest
-```
-  
-## via docker-compose  
-  
-```yaml
-version: "2"
-services:
-  ProjectName:
-    image: casjaysdevdocker/go
-    container_name: casjaysdevdocker-go
-    environment:
-      - TZ=America/New_York
-      - HOSTNAME=go
-    volumes:
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes/data:/data:z"
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/go/go/latest/volumes/config:/config:z"
-    restart: always
-```
-  
-## Usage
 
-The container idles after init. Use `docker exec` (or `docker compose
-exec`) to run go commands against a project mounted into the container,
-or do a one-shot build with `docker run --rm`:
+---
+
+## 🐳 Docker
+
+### Quick one-shot commands
 
 ```shell
-# one-off build (mount your project at /app)
+# build a project (mount source at /app)
 docker run --rm -it \
-  -v "$PWD:/app" \
-  -w /app \
+  -v "$PWD:/app" -w /app \
   casjaysdevdocker/go:latest \
-  bash -lc 'go build ./...'
+  go build ./...
 
-# interactive dev shell
+# run tests
 docker run --rm -it \
-  -v "$PWD:/app" \
-  -w /app \
+  -v "$PWD:/app" -w /app \
+  casjaysdevdocker/go:latest \
+  gotestsum ./...
+
+# lint
+docker run --rm -it \
+  -v "$PWD:/app" -w /app \
+  casjaysdevdocker/go:latest \
+  golangci-lint run
+
+# interactive shell
+docker run --rm -it \
+  -v "$PWD:/app" -w /app \
   casjaysdevdocker/go:latest \
   bash -l
-
-# exec into the long-running container
-docker exec -it casjaysdevdocker-go-latest bash -l
-docker exec casjaysdevdocker-go-latest go test ./...
-docker exec casjaysdevdocker-go-latest golangci-lint run
-docker exec casjaysdevdocker-go-latest goreleaser release --snapshot --clean
 ```
 
-`WORKDIR` inside the image is `/app`. Project code can also be mounted
-at `/work`, `/root/app`, `/root/project`, or `/data/build` — all are
-created on startup.
-
-## Cross-compile
-
-Go's toolchain ships pre-compiled stdlib for every supported `GOOS/GOARCH`
-combination. With the image's `CGO_ENABLED=0` default, **no extra
-toolchain is needed** for cross-compiling pure-Go binaries:
+### Long-running container
 
 ```shell
-GOOS=windows GOARCH=amd64 go build -o app.exe ./...
-GOOS=darwin  GOARCH=arm64 go build -o app     ./...
-GOOS=linux   GOARCH=arm64 go build -o app     ./...
-GOOS=freebsd GOARCH=amd64 go build -o app     ./...
+docker run -d \
+  --restart always \
+  --name casjaysdevdocker-go \
+  --hostname go \
+  -e TZ=${TIMEZONE:-America/New_York} \
+  -v go-state:/usr/local/share/go \
+  -v "$PWD:/app" -w /app \
+  casjaysdevdocker/go:latest
+
+# exec into it
+docker exec -it casjaysdevdocker-go bash -l
+docker exec casjaysdevdocker-go go test ./...
+docker exec casjaysdevdocker-go golangci-lint run
+docker exec casjaysdevdocker-go goreleaser release --snapshot --clean
 ```
 
-Run `go tool dist list` inside the container for the full ~40-target
-matrix. `goreleaser` is pre-installed to orchestrate release builds.
+### docker-compose
 
-## Environment variables
+```yaml
+services:
+  go:
+    image: casjaysdevdocker/go:latest
+    container_name: casjaysdevdocker-go
+    hostname: go
+    environment:
+      - TZ=America/New_York
+    volumes:
+      - go-state:/usr/local/share/go
+      - .:/app
+    working_dir: /app
+    restart: always
 
-| Var           | Default                                  | Purpose                                  |
-|---------------|------------------------------------------|------------------------------------------|
-| `GOPATH`      | `/usr/local/share/go`                    | Workspace; `$GOPATH/bin` on PATH         |
-| `GOCACHE`     | `/usr/local/share/go/cache`              | Build cache                              |
-| `GOMODCACHE`  | *(unset; defaults to `$GOPATH/pkg/mod`)* | Module cache                             |
-| `CGO_ENABLED` | `0`                                      | cgo off by default — static binaries     |
-| `GOTOOLCHAIN` | `auto`                                   | Auto-fetch matching Go from `go.mod`     |
-| `TZ`          | `America/New_York`                       | Override at run time (`-e TZ=...`)       |
-
-`CGO_ENABLED=0` produces fully static binaries (drop-in deployment
-anywhere). Build deps for cgo (`gcc`, `musl-dev`, `openssl-dev`, etc.)
-are still installed so you can opt in per build:
-
-```shell
-CGO_ENABLED=1 go build ./...
+volumes:
+  go-state:
 ```
 
-## Persistence
+---
 
-Go state lives at the canonical FHS path **`/usr/local/share/go`**,
-declared as a Docker `VOLUME`. Mount a named volume there to keep the
-module cache, build cache, and any `go install`-ed binaries across
-container rebuilds:
+## 🔧 Included tools
+
+### Go distribution
+
+| Binary | Purpose |
+|--------|---------|
+| `go` | Go compiler and toolchain |
+| `gofmt` | Standard formatter (bundled with Go) |
+
+### Linting & static analysis
+
+| Tool | Purpose |
+|------|---------|
+| `golangci-lint` | Meta-linter — runs 50+ analysers in one pass |
+| `staticcheck` | Advanced static analyser (SA, QF, ST, S1 checks) |
+| `govulncheck` | Vulnerability scanner against the Go vuln DB |
+
+### Formatting & imports
+
+| Tool | Purpose |
+|------|---------|
+| `goimports` | `gofmt` + automatic import grouping |
+| `gofumpt` | Stricter formatter used by many golangci-lint configs |
+
+### Testing & benchmarking
+
+| Tool | Purpose |
+|------|---------|
+| `gotestsum` | Structured test runner — JUnit/JSON export, better output |
+| `benchstat` | Statistically sound comparison of `go test -bench` runs |
+
+### Debugging & diagnostics
+
+| Tool | Purpose |
+|------|---------|
+| `dlv` | Delve — full Go source-level debugger |
+| `gops` | Live process diagnostics — stacks, GC, process list |
+
+### Code generation
+
+| Tool | Purpose |
+|------|---------|
+| `stringer` | Generates `String()` for iota-based types |
+| `wire` | Compile-time dependency injection code generator |
+| `mockgen` | Interface mock generator (Uber fork of `golang/mock`) |
+
+### Protobuf & gRPC
+
+| Tool | Purpose |
+|------|---------|
+| `protoc` | Protocol Buffers compiler (system package) |
+| `protoc-gen-go` | Protobuf Go code generator |
+| `protoc-gen-go-grpc` | gRPC Go code generator |
+| `buf` | Modern protobuf toolchain — lint, format, breaking-change detection |
+
+### DB migrations
+
+| Tool | Purpose |
+|------|---------|
+| `goose` | Go-native migration runner — supports Go and SQL migrations |
+
+### Release & dev loop
+
+| Tool | Purpose |
+|------|---------|
+| `goreleaser` | Cross-compile, sign, publish, and push container images |
+| `ko` | Build Go container images without a Dockerfile |
+| `air` | Live-reload dev server for iterative development |
+
+### Language server
+
+| Tool | Purpose |
+|------|---------|
+| `gopls` | Official Go language server — editor integration |
+
+---
+
+## ⚙️ Environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `GOPATH` | `/usr/local/share/go` | Workspace; declared as `VOLUME` |
+| `GOCACHE` | `/usr/local/share/go/cache` | Build cache (persisted in volume) |
+| `GOMODCACHE` | *(defaults to `$GOPATH/pkg/mod`)* | Module cache |
+| `CGO_ENABLED` | `0` | Static builds by default — override per build |
+| `GOTOOLCHAIN` | `auto` | Auto-fetch the Go version declared in `go.mod` |
+| `TZ` | `America/New_York` | Override at run time with `-e TZ=...` |
+
+Opt into CGO per build without changing the image:
 
 ```shell
-# named volume (managed by docker)
+docker run --rm -v "$PWD:/app" -w /app \
+  -e CGO_ENABLED=1 \
+  casjaysdevdocker/go:latest \
+  go build ./...
+```
+
+---
+
+## 🗂️ PATH order
+
+```
+/usr/local/go/bin  →  /usr/local/bin  →  $GOPATH/bin  →  ...
+```
+
+Baked tools (`/usr/local/bin`) always take precedence over anything installed
+at runtime into `$GOPATH/bin`, so a volume-mounted Go workspace can never
+shadow the image tools.
+
+---
+
+## 💾 Persistence
+
+Go state lives at **`/usr/local/share/go`** (declared `VOLUME`). Mount a named
+volume to persist the module cache, build cache, and any `go install`-ed tools
+across container rebuilds:
+
+```shell
+# named volume (recommended)
 docker run -v go-state:/usr/local/share/go ...
 
-# or share with the host's own Go cache
+# share with the host's own Go workspace
 docker run -v ~/go:/usr/local/share/go ...
 ```
 
-For convenience these all resolve to the canonical dir via symlinks:
+Convenience symlinks also resolve to the canonical path:
 
-- `/go` (legacy Docker convention, same as the official `golang` image)
-- `/root/go` (Go's default `~/go` GOPATH)
-- `/root/.go`
-- `/root/.local/share/go` (XDG)
-- `/data/go` (created at container start)
+| Symlink | Notes |
+|---------|-------|
+| `/go` | Legacy Docker convention — matches the official `golang` image |
+| `/root/go` | Go's default `~/go` GOPATH |
+| `/root/.go` | Hidden variant |
+| `/root/.local/share/go` | XDG base-dir variant |
+| `/data/go` | Created at container start |
 
-  
-## Get source files  
-  
+---
+
+## 🌐 Cross-compile
+
+With `CGO_ENABLED=0` (the default) the Go toolchain cross-compiles pure-Go
+binaries with no extra setup:
+
 ```shell
-dockermgr download src casjaysdevdocker/go
+GOOS=linux   GOARCH=arm64  go build -o app-linux-arm64   ./...
+GOOS=darwin  GOARCH=arm64  go build -o app-darwin-arm64  ./...
+GOOS=windows GOARCH=amd64  go build -o app-windows.exe   ./...
+GOOS=freebsd GOARCH=amd64  go build -o app-freebsd-amd64 ./...
 ```
-  
-OR
-  
+
+Run `go tool dist list` for the full ~50-target matrix. `goreleaser` is
+pre-installed to orchestrate multi-platform release builds.
+
+---
+
+## 🛠️ Development
+
+### Prerequisites
+
+- Docker (with buildx)
+- `make`, `bash`
+
+### Build the image locally
+
 ```shell
-git clone "https://github.com/casjaysdevdocker/go" "$HOME/Projects/github/casjaysdevdocker/go"
-```
-  
-## Build container  
-  
-```shell
+git clone https://github.com/casjaysdevdocker/go "$HOME/Projects/github/casjaysdevdocker/go"
 cd "$HOME/Projects/github/casjaysdevdocker/go"
-buildx 
+docker build --tag casjaysdevdocker/go:test .
 ```
-  
-## Authors  
-  
-🤖 casjay: [Github](https://github.com/casjay) 🤖  
-⛵ casjaysdevdocker: [Github](https://github.com/casjaysdevdocker) [Docker](https://hub.docker.com/u/casjaysdevdocker) ⛵  
+
+### Get source files
+
+```shell
+git clone "https://github.com/casjaysdevdocker/go" \
+  "$HOME/Projects/github/casjaysdevdocker/go"
+```
+
+---
+
+## 📄 License
+
+MIT — see [LICENSE.md](LICENSE.md)
+
+---
+
+🤖 [casjay](https://github.com/casjay) ·
+⛵ [casjaysdevdocker](https://github.com/casjaysdevdocker) ·
+🐳 [Docker Hub](https://hub.docker.com/u/casjaysdevdocker)
