@@ -885,23 +885,19 @@ __create_env_file() {
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 __exec_command() {
-  local arg=("$@")
   local exitCode=0
-  local cmdExec="${arg:-}"
-  local pre_exec="--login -c"
-  local shell bin prog
-  shell=$(type -P bash || type -P dash || type -P ash || type -P sh) 2>/dev/null
-  bin="${arg[0]:-bash}"
+  local bin="${1:-bash}"
+  local prog
   prog="$(type -P "$bin" 2>/dev/null || echo "$bin")"
-  if type -t "$bin" &>/dev/null; then
-    echo "${exec_message:-Executing command: $cmdExec}"
-    "$shell" $pre_exec "$cmdExec"
+  if [ -x "$prog" ]; then
+    echo "${exec_message:-Executing: $*}"
+    exec "$@"
     exitCode=$?
   elif [ -f "$prog" ]; then
-    echo "$prog is not executable"
+    echo "Error: $prog is not executable" >&2
     exitCode=98
   else
-    echo "$prog does not exist"
+    echo "Error: command not found: $bin" >&2
     exitCode=99
   fi
   return $exitCode
