@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+# Default Go workflow: tidy → fmt → vet → test → build
+# Runs automatically when `docker run casjaysdev/go` is called with no args.
+# Working directory is expected to be a Go module root (go.mod must exist).
+set -euo pipefail
+
+# Resolve the working directory — prefer /app if mounted, else cwd
+WORK_DIR="${GOWORKDIR:-${PWD}}"
+cd "$WORK_DIR"
+
+# Require a go.mod so we fail fast with a clear message instead of cryptic go errors
+if [ ! -f "go.mod" ]; then
+  echo "Error: no go.mod found in ${WORK_DIR}" >&2
+  echo "Mount your project with: docker run --rm -v \"\$(pwd)\":/app casjaysdev/go" >&2
+  exit 1
+fi
+
+MODULE="$(awk '/^module /{print $2}' go.mod)"
+echo ""
+echo "▶ Go workflow: ${MODULE}"
+echo "  Working dir: ${WORK_DIR}"
+echo ""
+
+run_step() {
+  local label="$1"; shift
+  echo "── ${label}"
+  "$@"
+  echo ""
+}
+
+# 1. Sync module graph and go.sum before anything reads them
+run_step "go mod tidy" go mod tidy
+
+# 2. Format all Go source files in place
+run_step "gofmt -w ." gofmt -w .
+
+# 3. Catch suspicious constructs
+run_step "go vet ./..." go vet ./...
+
+# 4. Run tests — fail fast before wasting time on a build
+run_step "go test ./..." go test ./...
+
+# 5. Build all main packages; output lands alongside source in each package dir
+run_step "go build ./..." go build ./...
+
+echo "✅ Done."

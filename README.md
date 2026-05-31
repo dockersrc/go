@@ -12,39 +12,47 @@ you can opt in per build.
 ## 📦 Pull
 
 ```shell
-docker pull casjaysdevdocker/go:latest
+docker pull casjaysdev/go:latest
 ```
 
 ---
 
 ## 🐳 Docker
 
-### Quick one-shot commands
+### Default workflow — no args needed
+
+Mount your project at `/app` and run with no arguments. The container will
+automatically run the full Go workflow:
+
+```
+go mod tidy  →  gofmt -w .  →  go vet ./...  →  go test ./...  →  go build ./...
+```
 
 ```shell
-# build a project (mount source at /app)
-docker run --rm -it \
-  -v "$PWD:/app" -w /app \
-  casjaysdevdocker/go:latest \
-  go build ./...
+docker run --rm -v "$PWD:/app" casjaysdev/go:latest
+```
 
-# run tests
-docker run --rm -it \
-  -v "$PWD:/app" -w /app \
-  casjaysdevdocker/go:latest \
-  gotestsum ./...
+### One-shot commands
 
-# lint
-docker run --rm -it \
-  -v "$PWD:/app" -w /app \
-  casjaysdevdocker/go:latest \
-  golangci-lint run
+Pass any command and it runs directly instead of the default workflow:
+
+```shell
+# run tests only
+docker run --rm -v "$PWD:/app" casjaysdev/go:latest go test -v ./...
+
+# lint (add --timeout for cold caches)
+docker run --rm -v "$PWD:/app" casjaysdev/go:latest golangci-lint run --timeout=5m ./...
+
+# cross-compile for arm64
+docker run --rm -v "$PWD:/app" \
+  -e GOOS=linux -e GOARCH=arm64 \
+  casjaysdev/go:latest go build -o app-arm64 ./...
 
 # interactive shell
-docker run --rm -it \
-  -v "$PWD:/app" -w /app \
-  casjaysdevdocker/go:latest \
-  bash -l
+docker run --rm -it -v "$PWD:/app" casjaysdev/go:latest bash
+
+# sh -c for compound commands
+docker run --rm -v "$PWD:/app" casjaysdev/go:latest sh -c 'go vet ./... && staticcheck ./...'
 ```
 
 ### Long-running container
@@ -52,18 +60,19 @@ docker run --rm -it \
 ```shell
 docker run -d \
   --restart always \
-  --name casjaysdevdocker-go \
+  --name casjaysdev-go \
   --hostname go \
   -e TZ=${TIMEZONE:-America/New_York} \
   -v go-state:/usr/local/share/go \
-  -v "$PWD:/app" -w /app \
-  casjaysdevdocker/go:latest
+  -v "$PWD:/app" \
+  casjaysdev/go:latest \
+  tail null
 
 # exec into it
-docker exec -it casjaysdevdocker-go bash -l
-docker exec casjaysdevdocker-go go test ./...
-docker exec casjaysdevdocker-go golangci-lint run
-docker exec casjaysdevdocker-go goreleaser release --snapshot --clean
+docker exec -it casjaysdev-go bash
+docker exec casjaysdev-go go test ./...
+docker exec casjaysdev-go golangci-lint run --timeout=5m
+docker exec casjaysdev-go goreleaser release --snapshot --clean
 ```
 
 ### docker-compose
@@ -71,8 +80,8 @@ docker exec casjaysdevdocker-go goreleaser release --snapshot --clean
 ```yaml
 services:
   go:
-    image: casjaysdevdocker/go:latest
-    container_name: casjaysdevdocker-go
+    image: casjaysdev/go:latest
+    container_name: casjaysdev-go
     hostname: go
     environment:
       - TZ=America/New_York
@@ -181,7 +190,7 @@ Opt into CGO per build without changing the image:
 ```shell
 docker run --rm -v "$PWD:/app" -w /app \
   -e CGO_ENABLED=1 \
-  casjaysdevdocker/go:latest \
+  casjaysdev/go:latest \
   go build ./...
 ```
 
@@ -252,26 +261,26 @@ pre-installed to orchestrate multi-platform release builds.
 ### Build the image locally
 
 ```shell
-git clone https://github.com/casjaysdevdocker/go "$HOME/Projects/github/casjaysdevdocker/go"
-cd "$HOME/Projects/github/casjaysdevdocker/go"
-docker build --tag casjaysdevdocker/go:test .
+git clone https://github.com/casjaysdev/go "$HOME/Projects/github/casjaysdev/go"
+cd "$HOME/Projects/github/casjaysdev/go"
+docker build --tag casjaysdev/go:test .
 ```
 
 ### Get source files
 
 ```shell
-git clone "https://github.com/casjaysdevdocker/go" \
-  "$HOME/Projects/github/casjaysdevdocker/go"
+git clone "https://github.com/casjaysdev/go" \
+  "$HOME/Projects/github/casjaysdev/go"
 ```
 
 ---
 
 ## 📄 License
 
-MIT — see [LICENSE.md](LICENSE.md)
+MIT
 
 ---
 
-🤖 [casjay](https://github.com/casjay) ·
-⛵ [casjaysdevdocker](https://github.com/casjaysdevdocker) ·
-🐳 [Docker Hub](https://hub.docker.com/u/casjaysdevdocker)
+🤖 [casjay](https://github.com/casjay)  
+⛵ [casjaysdev](https://github.com/casjaysdev)  
+🐳 [Docker Hub](https://hub.docker.com/u/casjaysdev)  

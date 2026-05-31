@@ -506,9 +506,9 @@ if [ "$START_SERVICES" = "yes" ] || [ -z "$1" ]; then
     echo "$$" >"$ENTRYPOINT_PID_FILE"
     __start_init_scripts "/usr/local/etc/docker/init.d"
     CONTAINER_INIT="${CONTAINER_INIT:-no}"
-    # Only block in monitoring mode when no user command was given
+    # No user command: run default Go workflow instead of blocking
     if [ $# -eq 0 ]; then
-      __no_exit
+      __exec_command go-workflow
       exit $?
     fi
   fi
@@ -643,8 +643,13 @@ procs)
   ;;
 # Launch shell
 */bin/sh | */bin/bash | bash | sh | shell)
+  shell_bin="$(type -P "${1}" 2>/dev/null || echo "/bin/bash")"
   shift 1
-  __exec_command "${@:-/bin/bash -l}"
+  if [ $# -gt 0 ]; then
+    __exec_command "$shell_bin" "$@"
+  else
+    __exec_command "$shell_bin" -l
+  fi
   exit $?
   ;;
 # execute commands
@@ -676,11 +681,8 @@ start)
 # Execute primary command
 *)
   if [ $# -eq 0 ]; then
-    if [ ! -f "$ENTRYPOINT_PID_FILE" ]; then
-      echo "$$" >"$ENTRYPOINT_PID_FILE"
-      [ "$START_SERVICES" = "no" ] && [ "$CONTAINER_INIT" = "yes" ] || __start_init_scripts "/usr/local/etc/docker/init.d"
-    fi
-    __no_exit
+    # No args: run the default Go workflow (tidy → fmt → vet → test → build)
+    __exec_command go-workflow
   else
     __exec_command "$@"
   fi
