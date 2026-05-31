@@ -105,6 +105,12 @@ go install gotest.tools/gotestsum@latest
 # Source-level debugger
 go install github.com/go-delve/delve/cmd/dlv@latest
 
+# Live process diagnostics: list Go processes, dump stacks, force GC, etc.
+go install github.com/google/gops@latest
+
+# Benchmark comparison (statistically sound diff of pprof benchmark runs)
+go install golang.org/x/perf/cmd/benchstat@latest
+
 # Live-reload dev server for iterative development
 go install github.com/air-verse/air@latest
 
