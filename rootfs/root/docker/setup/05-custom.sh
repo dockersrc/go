@@ -73,6 +73,10 @@ export GOCACHE="${GOCACHE_BUILD}"
 export CGO_ENABLED="0"
 export GOTOOLCHAIN="auto"
 
+# Under QEMU arm64 emulation the Go compiler can segfault when many packages
+# compile in parallel due to memory pressure. Serialise compilation on arm64.
+[ "$(uname -m)" = "aarch64" ] && export GOFLAGS="${GOFLAGS:+$GOFLAGS }-p=1"
+
 # Ensure the GOPATH directory tree exists
 mkdir -p "${GOPATH_DIR}/pkg/mod" "${GOPATH_DIR}/cache" "${GOPATH_DIR}/bin"
 
