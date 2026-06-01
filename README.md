@@ -83,12 +83,12 @@ services:
     image: casjaysdev/go:latest
     container_name: casjaysdev-go
     hostname: go
+    command: tail null
     environment:
       - TZ=America/New_York
     volumes:
       - go-state:/usr/local/share/go
       - .:/app
-    working_dir: /app
     restart: always
 
 volumes:
@@ -222,16 +222,6 @@ docker run -v go-state:/usr/local/share/go ...
 docker run -v ~/go:/usr/local/share/go ...
 ```
 
-Convenience symlinks also resolve to the canonical path:
-
-| Symlink | Notes |
-|---------|-------|
-| `/go` | Legacy Docker convention — matches the official `golang` image |
-| `/root/go` | Go's default `~/go` GOPATH |
-| `/root/.go` | Hidden variant |
-| `/root/.local/share/go` | XDG base-dir variant |
-| `/data/go` | Created at container start |
-
 ---
 
 ## 🌐 Cross-compile
@@ -240,14 +230,15 @@ With `CGO_ENABLED=0` (the default) the Go toolchain cross-compiles pure-Go
 binaries with no extra setup:
 
 ```shell
-GOOS=linux   GOARCH=arm64  go build -o app-linux-arm64   ./...
-GOOS=darwin  GOARCH=arm64  go build -o app-darwin-arm64  ./...
-GOOS=windows GOARCH=amd64  go build -o app-windows.exe   ./...
-GOOS=freebsd GOARCH=amd64  go build -o app-freebsd-amd64 ./...
+docker run --rm -v "$PWD:/app" -e GOOS=linux   -e GOARCH=arm64  casjaysdev/go:latest go build -o app-linux-arm64   ./...
+docker run --rm -v "$PWD:/app" -e GOOS=darwin  -e GOARCH=arm64  casjaysdev/go:latest go build -o app-darwin-arm64  ./...
+docker run --rm -v "$PWD:/app" -e GOOS=windows -e GOARCH=amd64  casjaysdev/go:latest go build -o app-windows.exe   ./...
+docker run --rm -v "$PWD:/app" -e GOOS=freebsd -e GOARCH=amd64  casjaysdev/go:latest go build -o app-freebsd-amd64 ./...
 ```
 
-Run `go tool dist list` for the full ~50-target matrix. `goreleaser` is
-pre-installed to orchestrate multi-platform release builds.
+Run `docker run --rm casjaysdev/go:latest go tool dist list` for the full
+~50-target matrix. `goreleaser` is pre-installed to orchestrate multi-platform
+release builds.
 
 ---
 
@@ -261,16 +252,16 @@ pre-installed to orchestrate multi-platform release builds.
 ### Build the image locally
 
 ```shell
-git clone https://github.com/casjaysdev/go "$HOME/Projects/github/casjaysdev/go"
-cd "$HOME/Projects/github/casjaysdev/go"
+git clone https://github.com/dockersrc/go "$HOME/Projects/github/dockersrc/go"
+cd "$HOME/Projects/github/dockersrc/go"
 docker build --tag casjaysdev/go:test .
 ```
 
 ### Get source files
 
 ```shell
-git clone "https://github.com/casjaysdev/go" \
-  "$HOME/Projects/github/casjaysdev/go"
+git clone "https://github.com/dockersrc/go" \
+  "$HOME/Projects/github/dockersrc/go"
 ```
 
 ---
