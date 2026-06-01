@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker buildx *)",
+      "Bash(docker image *)",
+      "Bash(docker images *)",
+      "Bash(docker system df *)",
+      "Bash(docker stats --no-stream *)",
+      "Bash(docker ps *)",
+      "Bash(docker run --rm *)",
+      "Bash(docker info *)",
+      "Bash(docker pull *)",
+      "Bash(make check *)",
+      "Bash(make test *)",
+      "Bash(make build *)",
+      "Bash(curl -fsSL *)",
+      "Bash(curl -fsSo *)",
+      "Bash(curl -fsSLI *)",
+      "Bash(gitcommit --dir /root/Projects/github/dockersrc/go all)"
+    ]
+  }
+}

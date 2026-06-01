@@ -112,6 +112,12 @@ Session.vim
 ### AI tool local configs (personal settings, never commit) ###
 # Claude Code
 .claude/settings.local.json
+.claude/backups/
+.claude/cache/
+.claude/file-history/
+.claude/history.jsonl
+.claude/projects/
+.claude/statsFile
 .claude/*.lock
 
 # Cursor
