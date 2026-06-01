@@ -38,38 +38,46 @@ GOCACHE_BUILD="/tmp/go-build-cache"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Helpers
 
-# Return the latest tag from a GitHub release API
+# Return the latest release tag from GitHub; exits 1 if the version cannot be resolved
 _gh_latest() {
   local repo="$1"
   local filter="${2:-.tag_name}"
-  curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" | jq -r "${filter}"
+  local auth_header=""
+  [ -n "${GITHUB_TOKEN:-}" ] && auth_header="-H Authorization: token ${GITHUB_TOKEN}"
+  # shellcheck disable=SC2206
+  local ver
+  ver="$(curl -fsSL ${auth_header:+$auth_header} "https://api.github.com/repos/${repo}/releases/latest" | jq -r "${filter}")"
+  if [ -z "$ver" ] || [ "$ver" = "null" ]; then
+    echo "ERROR: could not resolve latest version for ${repo}" >&2
+    exit 1
+  fi
+  echo "$ver"
 }
 
-# Download a tar.gz release asset, extract a single binary, install to GOBIN_DIR
-# Usage: _install_tar <url> <binary-name-in-archive> [<subdir-prefix>]
+# Download a tar.gz asset, find a named binary anywhere inside, install to GOBIN_DIR
 _install_tar() {
   local url="$1"
   local bin="$2"
-  local prefix="${3:-}"
   local tmp
   tmp="$(mktemp -d)"
+  echo "  → ${bin} from ${url##*/}"
   curl -fsSL "$url" | tar -C "$tmp" -xz
-  if [ -n "$prefix" ]; then
-    install -m 0755 "${tmp}/${prefix}/${bin}" "${GOBIN_DIR}/${bin}"
-  else
-    # Binary may be in a subdirectory; find it
-    local found
-    found="$(find "$tmp" -name "$bin" -type f | head -1)"
-    install -m 0755 "$found" "${GOBIN_DIR}/${bin}"
+  local found
+  found="$(find "$tmp" -name "$bin" -type f | head -1)"
+  if [ -z "$found" ]; then
+    echo "ERROR: binary '${bin}' not found in archive ${url##*/}" >&2
+    rm -rf "$tmp"
+    exit 1
   fi
+  install -m 0755 "$found" "${GOBIN_DIR}/${bin}"
   rm -rf "$tmp"
 }
 
-# Download a single binary release asset directly to GOBIN_DIR
-# Usage: _install_bin <url> <installed-name>
+# Download a single binary asset directly to GOBIN_DIR
 _install_bin() {
   local url="$1"
   local name="$2"
+  echo "  → ${name} from ${url##*/}"
   curl -fsSL "$url" -o "${GOBIN_DIR}/${name}"
   chmod 0755 "${GOBIN_DIR}/${name}"
 }
@@ -77,7 +85,7 @@ _install_bin() {
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Architecture detection
 
-# Go convention (used by gopls, govulncheck tarballs)
+# Go convention: amd64 / arm64 / armv6l / 386
 case "$(uname -m)" in
   x86_64)    _GOARCH="amd64"   ;;
   aarch64)   _GOARCH="arm64"   ;;
@@ -89,10 +97,10 @@ case "$(uname -m)" in
     ;;
 esac
 
-# uname -m verbatim (used by buf, goreleaser aarch64 vs arm64 assets)
+# uname -m verbatim: buf uses x86_64 / aarch64
 _UNAME_M="$(uname -m)"
 
-# goreleaser / ko / gotestsum / goose use x86_64 / arm64 (not aarch64)
+# goreleaser / ko / goose use x86_64 / arm64 (arm64 not aarch64)
 if [ "$_UNAME_M" = "aarch64" ]; then
   _ARCH_GLIBC="arm64"
 else
@@ -125,75 +133,60 @@ mkdir -p "${GOPATH_DIR}/pkg/mod" "${GOPATH_DIR}/cache" "${GOPATH_DIR}/bin"
 
 echo "Installing pre-built tools"
 
-# goreleaser — release automation
+# goreleaser — release automation (Linux/x86_64 or Linux/arm64)
 _GR_VER="$(_gh_latest goreleaser/goreleaser)"
-_GR_TAG="${_GR_VER#v}"
 _install_tar \
   "https://github.com/goreleaser/goreleaser/releases/download/${_GR_VER}/goreleaser_Linux_${_ARCH_GLIBC}.tar.gz" \
   "goreleaser"
 
-# golangci-lint — meta-linter (official installer writes to /usr/local/bin)
+# golangci-lint — meta-linter (official installer handles its own version resolution)
 curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
   | sh -s -- -b "${GOBIN_DIR}" latest
 
-# staticcheck — standalone advanced static analyser
-_SC_VER="$(_gh_latest dominikh/go-tools .tag_name)"
+# staticcheck — standalone advanced static analyser (linux_amd64 / linux_arm64)
+_SC_VER="$(_gh_latest dominikh/go-tools)"
 _install_tar \
   "https://github.com/dominikh/go-tools/releases/download/${_SC_VER}/staticcheck_linux_${_GOARCH}.tar.gz" \
   "staticcheck"
 
-# gofumpt — stricter formatter
+# gofumpt — stricter formatter; asset name includes version: gofumpt_v0.x.y_linux_amd64
 _GF_VER="$(_gh_latest mvdan/gofumpt)"
 _install_bin \
-  "https://github.com/mvdan/gofumpt/releases/download/${_GF_VER}/gofumpt_linux_${_GOARCH}" \
+  "https://github.com/mvdan/gofumpt/releases/download/${_GF_VER}/gofumpt_${_GF_VER}_linux_${_GOARCH}" \
   "gofumpt"
 
-# gotestsum — structured test runner
+# gotestsum — structured test runner; asset uses amd64/arm64 (not x86_64)
 _GTS_VER="$(_gh_latest gotestyourself/gotestsum)"
 _GTS_TAG="${_GTS_VER#v}"
 _install_tar \
-  "https://github.com/gotestyourself/gotestsum/releases/download/${_GTS_VER}/gotestsum_${_GTS_TAG}_linux_${_ARCH_GLIBC}.tar.gz" \
+  "https://github.com/gotestyourself/gotestsum/releases/download/${_GTS_VER}/gotestsum_${_GTS_TAG}_linux_${_GOARCH}.tar.gz" \
   "gotestsum"
 
-# ko — build Go container images without a Dockerfile
+# ko — build Go container images without a Dockerfile (Linux/x86_64 or Linux/arm64)
 _KO_VER="$(_gh_latest google/ko)"
 _KO_TAG="${_KO_VER#v}"
 _install_tar \
   "https://github.com/google/ko/releases/download/${_KO_VER}/ko_${_KO_TAG}_Linux_${_ARCH_GLIBC}.tar.gz" \
   "ko"
 
-# air — live-reload dev server
+# air — live-reload dev server; asset: air_1.x.y_linux_amd64 (version without v prefix)
 _AIR_VER="$(_gh_latest air-verse/air)"
+_AIR_TAG="${_AIR_VER#v}"
 _install_bin \
-  "https://github.com/air-verse/air/releases/download/${_AIR_VER}/air_linux_${_GOARCH}" \
+  "https://github.com/air-verse/air/releases/download/${_AIR_VER}/air_${_AIR_TAG}_linux_${_GOARCH}" \
   "air"
 
-# buf — modern protobuf toolchain
-# buf uses x86_64 / aarch64 (uname -m style)
+# buf — modern protobuf toolchain; uses x86_64/aarch64 (uname -m convention)
 _BUF_VER="$(_gh_latest bufbuild/buf)"
 _install_bin \
   "https://github.com/bufbuild/buf/releases/download/${_BUF_VER}/buf-Linux-${_UNAME_M}" \
   "buf"
 
-# goose — DB migration runner
+# goose — DB migration runner (linux_x86_64 or linux_arm64)
 _GOOSE_VER="$(_gh_latest pressly/goose)"
-_GOOSE_TAG="${_GOOSE_VER#v}"
 _install_bin \
   "https://github.com/pressly/goose/releases/download/${_GOOSE_VER}/goose_linux_${_ARCH_GLIBC}" \
   "goose"
-
-# gopls — Go language server
-_GOPLS_VER="$(curl -fsSL 'https://api.github.com/repos/golang/tools/tags?per_page=50' \
-  | jq -r '[.[] | select(.name | startswith("gopls/v"))] | .[0].name | ltrimstr("gopls/")')"
-_install_tar \
-  "https://github.com/golang/tools/releases/download/gopls%2F${_GOPLS_VER}/gopls_${_GOPLS_VER}_linux_${_GOARCH}.tar.gz" \
-  "gopls"
-
-# govulncheck — vulnerability scanner
-_VULN_VER="$(curl -fsSL 'https://api.github.com/repos/golang/vuln/releases/latest' | jq -r '.tag_name')"
-_install_tar \
-  "https://github.com/golang/vuln/releases/download/${_VULN_VER}/govulncheck_${_VULN_VER}_linux_${_GOARCH}.tar.gz" \
-  "govulncheck"
 
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # go install for tools without standalone release binaries
@@ -205,6 +198,12 @@ go install golang.org/x/tools/cmd/goimports@latest
 
 # Generate String() methods for iota-based types
 go install golang.org/x/tools/cmd/stringer@latest
+
+# Official Go language server (no binary releases; must compile)
+go install golang.org/x/tools/gopls@latest
+
+# Vulnerability scanner against the Go vulnerability database
+go install golang.org/x/vuln/cmd/govulncheck@latest
 
 # Source-level debugger
 go install github.com/go-delve/delve/cmd/dlv@latest
