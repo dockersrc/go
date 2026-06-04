@@ -189,7 +189,9 @@ __pycache__/
 .eggs/
 .venv/
 venv/
-env/
+# bare 'env/' would swallow rootfs/…/docker/env/ — use anchored patterns instead
+/env/
+src/env/
 
 ### Logs ###
 *.log
