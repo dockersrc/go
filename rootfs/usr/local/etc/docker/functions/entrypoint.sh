@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202605241245-git
+##@Version           :  202606041110-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  git-admin@casjaysdev.pro
 # @@License          :  LICENSE.md
@@ -885,19 +885,23 @@ __create_env_file() {
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 __exec_command() {
+  local arg=("$@")
   local exitCode=0
-  local bin="${1:-bash}"
-  local prog
+  local cmdExec="${arg:-}"
+  local pre_exec="--login -c"
+  local shell bin prog
+  shell=$(type -P bash || type -P dash || type -P ash || type -P sh) 2>/dev/null
+  bin="${arg[0]:-bash}"
   prog="$(type -P "$bin" 2>/dev/null || echo "$bin")"
-  if [ -x "$prog" ]; then
-    echo "${exec_message:-Executing: $*}"
-    exec "$@"
+  if type -t "$bin" &>/dev/null; then
+    echo "${exec_message:-Executing command: $cmdExec}"
+    "$shell" $pre_exec "$cmdExec"
     exitCode=$?
   elif [ -f "$prog" ]; then
-    echo "Error: $prog is not executable" >&2
+    echo "$prog is not executable"
     exitCode=98
   else
-    echo "Error: command not found: $bin" >&2
+    echo "$prog does not exist"
     exitCode=99
   fi
   return $exitCode
@@ -1299,11 +1303,8 @@ __initialize_default_templates() {
   local errors=0
   if [ -n "$DEFAULT_TEMPLATE_DIR" ]; then
     if [ "$CONFIG_DIR_INITIALIZED" = "no" ] && [ -d "/config" ]; then
+      [ -d "$DEFAULT_TEMPLATE_DIR" ] || return 0
       __log_info "Copying default config files $DEFAULT_TEMPLATE_DIR > /config"
-      if [ ! -d "$DEFAULT_TEMPLATE_DIR" ]; then
-        __log_warn "Template directory not found: $DEFAULT_TEMPLATE_DIR"
-        return 0
-      fi
       for create_config_template in "$DEFAULT_TEMPLATE_DIR"/*; do
         if [ -e "$create_config_template" ]; then
           create_template_name="${create_config_template##*/}"
@@ -1336,11 +1337,8 @@ __initialize_config_dir() {
   local errors=0
   if [ -n "$DEFAULT_CONF_DIR" ]; then
     if [ "$CONFIG_DIR_INITIALIZED" = "no" ] && [ -d "/config" ]; then
+      [ -d "$DEFAULT_CONF_DIR" ] || return 0
       __log_info "Copying custom config files: $DEFAULT_CONF_DIR > /config"
-      if [ ! -d "$DEFAULT_CONF_DIR" ]; then
-        __log_warn "Config directory not found: $DEFAULT_CONF_DIR"
-        return 0
-      fi
       for create_config_template in "$DEFAULT_CONF_DIR"/*; do
         if [ -e "$create_config_template" ]; then
           create_config_name="${create_config_template##*/}"
@@ -1373,6 +1371,7 @@ __initialize_data_dir() {
   [ "$DATA_DIR_INITIALIZED" = "no" ] || return 0
   if [ -d "/data" ]; then
     if [ -n "$DEFAULT_DATA_DIR" ]; then
+      [ -d "$DEFAULT_DATA_DIR" ] || return 0
       __log_info "Copying data files $DEFAULT_DATA_DIR > /data"
       for create_data_template in "$DEFAULT_DATA_DIR"/*; do
         create_data_name="${create_data_template##*/}"
