@@ -508,7 +508,7 @@ if [ "$START_SERVICES" = "yes" ] || [ -z "$1" ]; then
     CONTAINER_INIT="${CONTAINER_INIT:-no}"
     # No user command: run default Go workflow instead of blocking
     if [ $# -eq 0 ]; then
-      go-workflow
+      go-workflow "$@"
       exit $?
     fi
   fi
