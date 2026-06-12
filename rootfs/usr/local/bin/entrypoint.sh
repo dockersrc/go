@@ -12,8 +12,8 @@
 # @@Description      :  Entrypoint file for alpine
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :  
-# @@Resource         :  
+# @@Other            :
+# @@Resource         :
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/docker-entrypoint
@@ -508,7 +508,7 @@ if [ "$START_SERVICES" = "yes" ] || [ -z "$1" ]; then
     CONTAINER_INIT="${CONTAINER_INIT:-no}"
     # No user command: run default Go workflow instead of blocking
     if [ $# -eq 0 ]; then
-      __exec_command go-workflow
+      go-workflow
       exit $?
     fi
   fi
