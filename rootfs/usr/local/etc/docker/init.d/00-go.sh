@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202605292219-git
+##@Version           :  202506192219-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  WTFPL
@@ -9,9 +9,10 @@
 # @@Copyright        :  Copyright: (c) 2026 Jason Hempstead, Casjays Developments
 # @@Created          :  Friday, May 29, 2026 22:22 EDT
 # @@File             :  00-go.sh
-# @@Description      :  Go toolchain — configuration-only init (no daemon)
+# @@Description      :  Go toolchain — placeholder init (no daemon)
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-# Tell the init framework this is a configuration service, not a daemon.
-# This prevents __start_init_scripts from waiting for a PID or keep-alive loop.
-export CONTAINER_INIT="yes"
-export SERVICE_USES_PID="no"
+# This file must exist. __start_init_scripts spawns an infinite keep-alive loop
+# when init_count == 0 (no scripts in init.d/). Go is not a daemon — we just
+# need one script so init_count >= 1. SERVICE_USES_PID is set in the env file
+# (go.sh) which the parent shell reads; exports here are subshell-isolated and
+# would not propagate back to the entrypoint anyway.

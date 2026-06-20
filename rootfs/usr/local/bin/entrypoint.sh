@@ -655,8 +655,11 @@ procs)
 # execute commands
 exec)
   shift 1
-  __exec_command "${@:-echo "No commands given"}"
-  exit $?
+  if [ $# -eq 0 ]; then
+    echo "Error: exec requires a command" >&2
+    exit 1
+  fi
+  exec "$@"
   ;;
 # show/start init scripts
 start)
@@ -682,11 +685,10 @@ start)
 *)
   if [ $# -eq 0 ]; then
     # No args: run the default Go workflow (tidy → fmt → vet → test → build)
-    __exec_command go-workflow
+    exec go-workflow
   else
-    __exec_command "$@"
+    exec "$@"
   fi
-  exit $?
   ;;
 esac
 # - - - - - - - - - - - - - - - - - - - - - - - - -

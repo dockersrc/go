@@ -6,7 +6,6 @@
 set -euo pipefail
 
 # Resolve the working directory — prefer /app if mounted, else cwd
-GO_EXITCODE=0
 WORK_DIR="${GOWORKDIR:-${PWD}}"
 cd "$WORK_DIR"
 
@@ -25,35 +24,21 @@ echo ""
 
 run_step() {
   local label="$1"; shift
-  local exitCode=0
   echo "── ${label}"
   "$@"
-  exitCode=$?
   echo ""
-  return $exitCode
 }
 
 # 1. Sync module graph and go.sum before anything reads them
 run_step "go mod tidy" go mod tidy
-retVal=$?
-GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 2. Format all Go source files in place
 run_step "gofmt -w ." gofmt -w .
-retVal=$?
-GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 3. Catch suspicious constructs
 run_step "go vet ./..." go vet ./...
-retVal=$?
-GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 4. Run tests — fail fast before wasting time on a build
 run_step "go test ./..." go test ./...
-retVal=$?
-GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 5. Build all main packages; output lands alongside source in each package dir
 run_step "go build ./..." go build ./...
-retVal=$?
-GO_EXITCODE=$((GO_EXITCODE + retVal))
 
 echo "✅ Done."
-exit $GO_EXITCODE
 

@@ -12,3 +12,5 @@ MONGODB_CONFIG_FILE="none"
 # This image has no long-running daemon; suppress the startup banner and health loop
 ENTRYPOINT_MESSAGE="no"
 HEALTH_ENABLED="no"
+# Tell __start_init_scripts this is a config-only init — no daemon process or PID file expected
+SERVICE_USES_PID="no"
