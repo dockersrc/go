@@ -22,6 +22,9 @@
 # Set bash options
 set -eo pipefail
 [ "$DEBUGGER" = "on" ] && echo "Enabling debugging" && set -x$DEBUGGER_OPTIONS
+# Force IPv4 for all curl calls in this script — the base image IPv6 routing
+# intercepts *.github.com and presents a cert for casjay.in, causing SAN mismatch
+printf -- '-4\n' > /root/.curlrc
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set env variables
 exitCode=0
