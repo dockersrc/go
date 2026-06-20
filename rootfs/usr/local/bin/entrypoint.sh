@@ -39,7 +39,7 @@ PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Set bash options
 SCRIPT_FILE="$0"
-CONTAINER_NAME="alpine"
+CONTAINER_NAME="go"
 SCRIPT_NAME="${SCRIPT_FILE##*/}"
 CONTAINER_NAME="${ENV_CONTAINER_NAME:-$CONTAINER_NAME}"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -108,7 +108,7 @@ WEB_SERVER_PORT=""
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Healthcheck variables
 # enable healthcheck [yes/no]
-HEALTH_ENABLED="yes"
+HEALTH_ENABLED="${HEALTH_ENABLED:-yes}"
 # comma separated list of processes for the healthcheck
 SERVICES_LIST="tini"
 # url endpoints: [http://localhost/health,http://localhost/test]
@@ -294,7 +294,7 @@ fi
 if [ "$ENTRYPOINT_FIRST_RUN" != "no" ]; then
   if [ "$CONFIG_DIR_INITIALIZED" = "no" ] || [ "$DATA_DIR_INITIALIZED" = "no" ]; then
     if [ "$ENTRYPOINT_MESSAGE" = "yes" ]; then
-      echo "Executing entrypoint script for alpine"
+      echo "Executing entrypoint script for go"
     fi
   fi
   # - - - - - - - - - - - - - - - - - - - - - - - - -

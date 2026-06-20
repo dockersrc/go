@@ -43,7 +43,7 @@ retVal=$?
 GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 3. Catch suspicious constructs
 run_step "go vet ./..." go vet ./...
-retval=$?
+retVal=$?
 GO_EXITCODE=$((GO_EXITCODE + retVal))
 # 4. Run tests — fail fast before wasting time on a build
 run_step "go test ./..." go test ./...
