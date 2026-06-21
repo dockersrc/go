@@ -29,19 +29,21 @@ run_step() {
   echo ""
 }
 
-# Resolve build mode from MODE or the legacy GO_PROD=1 flag.
-# MODE=prod|production  → strip binary (-trimpath -ldflags=-s -w); applied to go build only
-# MODE=dev|devel|development → default; full debug info, readable stack traces
-# GO_PROD=1 is kept for backwards compatibility and takes effect when MODE is unset.
+# Resolve build mode. Resolution order (first non-empty value wins):
+#   GO_MODE  — canonical name; prod|production or dev|devel|development
+#   MODE     — alias for GO_MODE (accepted for convenience)
+#   GO_PROD  — legacy flag; GO_PROD=1 maps to production mode
+# -trimpath -ldflags=-s -w applied to go build only; go test is unaffected.
+_RESOLVED_MODE="${GO_MODE:-${MODE:-}}"
 _IS_PROD=0
-case "${MODE:-}" in
+case "${_RESOLVED_MODE}" in
   prod | production)           _IS_PROD=1 ;;
   dev | devel | development)   _IS_PROD=0 ;;
   "")
     [ "${GO_PROD:-0}" = "1" ] && _IS_PROD=1
     ;;
   *)
-    echo "Warning: unknown MODE '${MODE}' — expected prod|production|dev|devel|development; defaulting to development" >&2
+    echo "Warning: unknown GO_MODE '${_RESOLVED_MODE}' — expected prod|production|dev|devel|development; defaulting to development" >&2
     ;;
 esac
 

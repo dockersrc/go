@@ -34,17 +34,17 @@ docker run --rm -v "$PWD:/app" casjaysdev/go:latest
 
 ### Production mode
 
-Set `MODE=prod` to strip binaries for release: `-trimpath` removes all local
-file system paths; `-ldflags=-s -w` strips the symbol table and DWARF debug
-info. Applied to `go build` only — `go test` is unaffected so stack traces
-stay readable.
+Set `GO_MODE=prod` to strip binaries for release: `-trimpath` removes all
+local file system paths; `-ldflags=-s -w` strips the symbol table and DWARF
+debug info. Applied to `go build` only — `go test` is unaffected so stack
+traces stay readable.
 
 ```shell
-docker run --rm -v "$PWD:/app" -e MODE=prod casjaysdev/go:latest
+docker run --rm -v "$PWD:/app" -e GO_MODE=prod casjaysdev/go:latest
 ```
 
-`MODE=production` is also accepted. `GO_PROD=1` is a legacy alias that still
-works when `MODE` is not set.
+`GO_MODE=production` is also accepted. `MODE` is an alias for `GO_MODE`.
+`GO_PROD=1` is a legacy alias that still works when `GO_MODE` is not set.
 
 ### One-shot commands
 
@@ -203,8 +203,9 @@ volumes:
 | `GOFLAGS` | `-buildvcs=false` | Suppress VCS stamp errors on mounted projects |
 | `GOPROXY` | `https://proxy.golang.org,direct` | Module proxy — override for private registries |
 | `GOTELEMETRY` | `off` | Disable Go 1.23+ telemetry |
-| `MODE` | `development` | Build mode: `prod`/`production` or `dev`/`devel`/`development` |
-| `GO_PROD` | *(unset)* | Legacy alias for `MODE=prod` — set to `1`; superseded by `MODE` |
+| `GO_MODE` | `development` | Build mode: `prod`/`production` or `dev`/`devel`/`development` |
+| `MODE` | *(unset)* | Alias for `GO_MODE` — `GO_MODE` takes precedence when both are set |
+| `GO_PROD` | *(unset)* | Legacy alias — `GO_PROD=1` equals `GO_MODE=prod`; superseded by `GO_MODE` |
 | `TZ` | `America/New_York` | Override at run time with `-e TZ=...` |
 
 Opt into CGO per build without changing the image:
