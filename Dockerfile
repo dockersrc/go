@@ -88,6 +88,9 @@ ENV GOBIN="/usr/local/bin"
 ENV GOCACHE="/usr/local/share/go/cache"
 ENV CGO_ENABLED="0"
 ENV GOTOOLCHAIN="auto"
+ENV GOFLAGS="-buildvcs=false"
+ENV GOTELEMETRY="off"
+ENV GOPROXY="https://proxy.golang.org,direct"
 
 USER ${USER}
 WORKDIR /root
@@ -272,9 +275,13 @@ ENV PHP_VERSION="${PHP_VERSION}"
 ENV DISTRO_VERSION="${IMAGE_VERSION}"
 ENV WWW_ROOT_DIR="${WWW_ROOT_DIR}"
 ENV GOPATH="/usr/local/share/go"
+ENV GOBIN="/usr/local/bin"
 ENV GOCACHE="/usr/local/share/go/cache"
 ENV CGO_ENABLED="0"
 ENV GOTOOLCHAIN="auto"
+ENV GOFLAGS="-buildvcs=false"
+ENV GOTELEMETRY="off"
+ENV GOPROXY="https://proxy.golang.org,direct"
 
 COPY --from=build /. /
 
