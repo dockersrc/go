@@ -29,6 +29,26 @@ ARG DISTRO_VERSION="${IMAGE_VERSION}"
 ARG BUILD_VERSION="${BUILD_DATE}"
 
 FROM tianon/gosu:latest AS gosu
+
+# Build Go tools natively on the host platform using Go's cross-compilation.
+# This avoids QEMU emulation for arm64 and reduces compile time from hours to minutes.
+FROM --platform=$BUILDPLATFORM golang:alpine AS go-tools
+ARG TARGETOS=linux
+ARG TARGETARCH
+ENV CGO_ENABLED=0
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install \
+    golang.org/x/tools/cmd/goimports@latest \
+    golang.org/x/tools/cmd/stringer@latest \
+    golang.org/x/tools/gopls@latest \
+    golang.org/x/vuln/cmd/govulncheck@latest \
+    github.com/go-delve/delve/cmd/dlv@latest \
+    github.com/google/gops@latest \
+    golang.org/x/perf/cmd/benchstat@latest \
+    github.com/google/wire/cmd/wire@latest \
+    go.uber.org/mock/mockgen@latest \
+    google.golang.org/protobuf/cmd/protoc-gen-go@latest \
+    google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
 FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
 ARG USER
@@ -158,6 +178,8 @@ RUN echo "Setting OS Settings "; \
 RUN echo "Custom Applications"; \
   $SHELL_OPTS; \
 echo ""
+
+COPY --from=go-tools /go/bin/ /usr/local/bin/
 
 RUN echo "Running custom commands"; \
   if [ -f "/root/docker/setup/05-custom.sh" ];then echo "Running the custom script";/root/docker/setup/05-custom.sh||{ echo "Failed to execute /root/docker/setup/05-custom.sh" && exit 10; };echo "Done running the custom script";fi; \

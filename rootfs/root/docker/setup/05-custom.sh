@@ -191,45 +191,10 @@ _install_bin \
   "https://github.com/pressly/goose/releases/download/${_GOOSE_VER}/goose_linux_${_ARCH_GLIBC}" \
   "goose"
 
-# - - - - - - - - - - - - - - - - - - - - - - - - -
-# go install for tools without standalone release binaries
-
-echo "Installing Go tooling via go install"
-
-# Import organiser — superset of gofmt that also manages import groups
-go install golang.org/x/tools/cmd/goimports@latest
-
-# Generate String() methods for iota-based types
-go install golang.org/x/tools/cmd/stringer@latest
-
-# Official Go language server (no binary releases; must compile)
-go install golang.org/x/tools/gopls@latest
-
-# Vulnerability scanner against the Go vulnerability database
-go install golang.org/x/vuln/cmd/govulncheck@latest
-
-# Source-level debugger
-go install github.com/go-delve/delve/cmd/dlv@latest
-
-# Live process diagnostics: list Go processes, dump stacks, force GC
-go install github.com/google/gops@latest
-
-# Benchmark comparison — statistically sound diff of pprof benchmark runs
-go install golang.org/x/perf/cmd/benchstat@latest
-
-# Compile-time dependency injection code generator
-go install github.com/google/wire/cmd/wire@latest
-
-# Mock generator for interfaces (Uber fork of golang/mock)
-go install go.uber.org/mock/mockgen@latest
-
-# protobuf Go code generator
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-
-# gRPC Go code generator
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-
-echo "Go tooling installed"
+# go install tools (goimports, stringer, gopls, govulncheck, dlv, gops, benchstat,
+# wire, mockgen, protoc-gen-go, protoc-gen-go-grpc) are cross-compiled natively on
+# the build platform in the Dockerfile go-tools stage and copied to /usr/local/bin
+# before this script runs — no QEMU-emulated compilation needed here.
 
 # Strip the module download cache and ephemeral build cache from this layer
 go clean -modcache
