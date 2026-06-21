@@ -9,7 +9,7 @@ you can opt in per build.
 
 ---
 
-## 📦 Pull
+## 📦 Install
 
 ```shell
 docker pull casjaysdev/go:latest
@@ -21,8 +21,8 @@ docker pull casjaysdev/go:latest
 
 ### Default workflow — no args needed
 
-Mount your project at `/app` and run with no arguments. The container will
-automatically run the full Go workflow:
+Mount your project at `/app` and run with no arguments. The container
+automatically runs the full Go workflow:
 
 ```
 go mod tidy  →  gofmt -w .  →  go vet ./...  →  go test ./...  →  go build ./...
@@ -30,6 +30,17 @@ go mod tidy  →  gofmt -w .  →  go vet ./...  →  go test ./...  →  go bui
 
 ```shell
 docker run --rm -v "$PWD:/app" casjaysdev/go:latest
+```
+
+### Production mode
+
+Set `GO_PROD=1` to strip binaries for release: `-trimpath` removes all local
+file system paths; `-ldflags=-s -w` strips the symbol table and DWARF debug
+info. Applied to `go build` only — `go test` is unaffected so stack traces
+stay readable.
+
+```shell
+docker run --rm -v "$PWD:/app" -e GO_PROD=1 casjaysdev/go:latest
 ```
 
 ### One-shot commands
@@ -179,19 +190,31 @@ volumes:
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `GOPATH` | `/usr/local/share/go` | Workspace; declared as `VOLUME` |
+| `GOBIN` | `/usr/local/bin` | Destination for `go install` binaries |
 | `GOCACHE` | `/usr/local/share/go/cache` | Build cache (persisted in volume) |
-| `GOMODCACHE` | *(defaults to `$GOPATH/pkg/mod`)* | Module cache |
 | `CGO_ENABLED` | `0` | Static builds by default — override per build |
 | `GOTOOLCHAIN` | `auto` | Auto-fetch the Go version declared in `go.mod` |
+| `GOFLAGS` | `-buildvcs=false` | Suppress VCS stamp errors on mounted projects |
+| `GOPROXY` | `https://proxy.golang.org,direct` | Module proxy — override for private registries |
+| `GOTELEMETRY` | `off` | Disable Go 1.23+ telemetry |
+| `GO_PROD` | *(unset)* | Set to `1` to enable `-trimpath -ldflags=-s -w` on `go build` |
 | `TZ` | `America/New_York` | Override at run time with `-e TZ=...` |
 
 Opt into CGO per build without changing the image:
 
 ```shell
-docker run --rm -v "$PWD:/app" -w /app \
+docker run --rm -v "$PWD:/app" \
   -e CGO_ENABLED=1 \
   casjaysdev/go:latest \
   go build ./...
+```
+
+Override the module proxy for a private registry:
+
+```shell
+docker run --rm -v "$PWD:/app" \
+  -e GOPROXY=https://goproxy.corp.internal,direct \
+  casjaysdev/go:latest
 ```
 
 ---
@@ -257,13 +280,6 @@ cd "$HOME/Projects/github/dockersrc/go"
 docker build --tag casjaysdev/go:test .
 ```
 
-### Get source files
-
-```shell
-git clone "https://github.com/dockersrc/go" \
-  "$HOME/Projects/github/dockersrc/go"
-```
-
 ---
 
 ## 📄 License
@@ -274,4 +290,4 @@ MIT
 
 🤖 [casjay](https://github.com/casjay)  
 ⛵ [casjaysdev](https://github.com/casjaysdev)  
-🐳 [Docker Hub](https://hub.docker.com/u/casjaysdev)  
+🐳 [Docker Hub](https://hub.docker.com/u/casjaysdev)
