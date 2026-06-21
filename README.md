@@ -34,14 +34,17 @@ docker run --rm -v "$PWD:/app" casjaysdev/go:latest
 
 ### Production mode
 
-Set `GO_PROD=1` to strip binaries for release: `-trimpath` removes all local
+Set `MODE=prod` to strip binaries for release: `-trimpath` removes all local
 file system paths; `-ldflags=-s -w` strips the symbol table and DWARF debug
 info. Applied to `go build` only — `go test` is unaffected so stack traces
 stay readable.
 
 ```shell
-docker run --rm -v "$PWD:/app" -e GO_PROD=1 casjaysdev/go:latest
+docker run --rm -v "$PWD:/app" -e MODE=prod casjaysdev/go:latest
 ```
+
+`MODE=production` is also accepted. `GO_PROD=1` is a legacy alias that still
+works when `MODE` is not set.
 
 ### One-shot commands
 
@@ -192,12 +195,16 @@ volumes:
 | `GOPATH` | `/usr/local/share/go` | Workspace; declared as `VOLUME` |
 | `GOBIN` | `/usr/local/bin` | Destination for `go install` binaries |
 | `GOCACHE` | `/usr/local/share/go/cache` | Build cache (persisted in volume) |
+| `GOWORKDIR` | *(cwd / `/app`)* | Override the working directory used by `go-workflow` |
+| `GOOS` | *(host OS)* | Target OS for cross-compilation — e.g. `linux`, `darwin`, `windows` |
+| `GOARCH` | *(host arch)* | Target architecture — e.g. `amd64`, `arm64` |
 | `CGO_ENABLED` | `0` | Static builds by default — override per build |
 | `GOTOOLCHAIN` | `auto` | Auto-fetch the Go version declared in `go.mod` |
 | `GOFLAGS` | `-buildvcs=false` | Suppress VCS stamp errors on mounted projects |
 | `GOPROXY` | `https://proxy.golang.org,direct` | Module proxy — override for private registries |
 | `GOTELEMETRY` | `off` | Disable Go 1.23+ telemetry |
-| `GO_PROD` | *(unset)* | Set to `1` to enable `-trimpath -ldflags=-s -w` on `go build` |
+| `MODE` | `development` | Build mode: `prod`/`production` or `dev`/`devel`/`development` |
+| `GO_PROD` | *(unset)* | Legacy alias for `MODE=prod` — set to `1`; superseded by `MODE` |
 | `TZ` | `America/New_York` | Override at run time with `-e TZ=...` |
 
 Opt into CGO per build without changing the image:

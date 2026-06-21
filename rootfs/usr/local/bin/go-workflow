@@ -29,16 +29,28 @@ run_step() {
   echo ""
 }
 
-# Production mode: GO_PROD=1 strips binaries and removes local source paths.
-# Enabled via: docker run --env GO_PROD=1 ...
-# -trimpath  removes all local file system paths from the compiled binary
-# -ldflags=-s strips the symbol table; -w strips DWARF debug info
-# Both reduce binary size and avoid leaking build-host paths into the output.
-# Applied to go build only — not go test — so stack traces stay readable.
+# Resolve build mode from MODE or the legacy GO_PROD=1 flag.
+# MODE=prod|production  → strip binary (-trimpath -ldflags=-s -w); applied to go build only
+# MODE=dev|devel|development → default; full debug info, readable stack traces
+# GO_PROD=1 is kept for backwards compatibility and takes effect when MODE is unset.
+_IS_PROD=0
+case "${MODE:-}" in
+  prod | production)           _IS_PROD=1 ;;
+  dev | devel | development)   _IS_PROD=0 ;;
+  "")
+    [ "${GO_PROD:-0}" = "1" ] && _IS_PROD=1
+    ;;
+  *)
+    echo "Warning: unknown MODE '${MODE}' — expected prod|production|dev|devel|development; defaulting to development" >&2
+    ;;
+esac
+
 BUILD_FLAGS=()
-if [ "${GO_PROD:-0}" = "1" ]; then
-  echo "  (production mode: -trimpath -ldflags=-s -w)"
+if [ "$_IS_PROD" = "1" ]; then
+  echo "  (mode: production — -trimpath -ldflags=-s -w)"
   BUILD_FLAGS=(-trimpath -ldflags="-s -w")
+else
+  echo "  (mode: development)"
 fi
 
 # 1. Sync module graph and go.sum before anything reads them
