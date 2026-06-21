@@ -52,6 +52,9 @@ FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
 ARG USER
 ARG LICENSE
+# Optional: pass --build-arg GITHUB_TOKEN=$(gh auth token) to raise the API rate
+# limit from 60 to 5000 req/hr — avoids 403s in parallel multi-platform builds.
+ARG GITHUB_TOKEN=""
 ARG TIMEZONE
 ARG LANGUAGE
 ARG IMAGE_NAME
@@ -91,6 +94,7 @@ ENV GOTOOLCHAIN="auto"
 ENV GOFLAGS="-buildvcs=false"
 ENV GOTELEMETRY="off"
 ENV GOPROXY="https://proxy.golang.org,direct"
+ENV GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 USER ${USER}
 WORKDIR /root

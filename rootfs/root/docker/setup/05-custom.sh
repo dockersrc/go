@@ -41,20 +41,29 @@ GOCACHE_BUILD="/tmp/go-build-cache"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Helpers
 
-# Return the latest release tag from GitHub; exits 1 if the version cannot be resolved
+# Return the latest release tag from GitHub; retries up to 3 times on transient errors
+# (rate-limit 403s are common in parallel multi-platform builds without a token).
+# Set GITHUB_TOKEN to raise the authenticated rate limit (5000 req/hr vs 60 req/hr).
 _gh_latest() {
   local repo="$1"
   local filter="${2:-.tag_name}"
   local auth_header=""
   [ -n "${GITHUB_TOKEN:-}" ] && auth_header="-H Authorization: token ${GITHUB_TOKEN}"
-  # shellcheck disable=SC2206
-  local ver
-  ver="$(curl -fsSL ${auth_header:+$auth_header} "https://api.github.com/repos/${repo}/releases/latest" | jq -r "${filter}")"
-  if [ -z "$ver" ] || [ "$ver" = "null" ]; then
-    echo "ERROR: could not resolve latest version for ${repo}" >&2
-    exit 1
-  fi
-  echo "$ver"
+  local ver attempt
+  for attempt in 1 2 3; do
+    # shellcheck disable=SC2206
+    ver="$(curl -fsSL ${auth_header:+$auth_header} "https://api.github.com/repos/${repo}/releases/latest" | jq -r "${filter}")"
+    if [ -n "$ver" ] && [ "$ver" != "null" ]; then
+      echo "$ver"
+      return 0
+    fi
+    if [ "$attempt" -lt 3 ]; then
+      echo "  rate-limited on ${repo} (attempt ${attempt}/3) — retrying in 60s..." >&2
+      sleep 60
+    fi
+  done
+  echo "ERROR: could not resolve latest version for ${repo} after 3 attempts" >&2
+  exit 1
 }
 
 # Download a tar.gz asset, find a named binary anywhere inside, install to GOBIN_DIR
