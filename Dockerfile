@@ -36,18 +36,17 @@ FROM --platform=$BUILDPLATFORM golang:alpine AS go-tools
 ARG TARGETOS=linux
 ARG TARGETARCH
 ENV CGO_ENABLED=0
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install \
-    golang.org/x/tools/cmd/goimports@latest \
-    golang.org/x/tools/cmd/stringer@latest \
-    golang.org/x/tools/gopls@latest \
-    golang.org/x/vuln/cmd/govulncheck@latest \
-    github.com/go-delve/delve/cmd/dlv@latest \
-    github.com/google/gops@latest \
-    golang.org/x/perf/cmd/benchstat@latest \
-    github.com/google/wire/cmd/wire@latest \
-    go.uber.org/mock/mockgen@latest \
-    google.golang.org/protobuf/cmd/protoc-gen-go@latest \
-    google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/tools/cmd/goimports@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/tools/cmd/stringer@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/tools/gopls@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/vuln/cmd/govulncheck@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/go-delve/delve/cmd/dlv@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/google/gops@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/perf/cmd/benchstat@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/google/wire/cmd/wire@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install go.uber.org/mock/mockgen@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
