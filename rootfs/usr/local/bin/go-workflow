@@ -29,6 +29,18 @@ run_step() {
   echo ""
 }
 
+# Production mode: GO_PROD=1 strips binaries and removes local source paths.
+# Enabled via: docker run --env GO_PROD=1 ...
+# -trimpath  removes all local file system paths from the compiled binary
+# -ldflags=-s strips the symbol table; -w strips DWARF debug info
+# Both reduce binary size and avoid leaking build-host paths into the output.
+# Applied to go build only — not go test — so stack traces stay readable.
+BUILD_FLAGS=()
+if [ "${GO_PROD:-0}" = "1" ]; then
+  echo "  (production mode: -trimpath -ldflags=-s -w)"
+  BUILD_FLAGS=(-trimpath -ldflags="-s -w")
+fi
+
 # 1. Sync module graph and go.sum before anything reads them
 run_step "go mod tidy" go mod tidy
 # 2. Format all Go source files in place
@@ -38,7 +50,7 @@ run_step "go vet ./..." go vet ./...
 # 4. Run tests — fail fast before wasting time on a build
 run_step "go test ./..." go test ./...
 # 5. Build all main packages; output lands alongside source in each package dir
-run_step "go build ./..." go build ./...
+run_step "go build ./..." go build "${BUILD_FLAGS[@]}" ./...
 
 echo "✅ Done."
 
