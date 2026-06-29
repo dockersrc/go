@@ -292,7 +292,7 @@ docker build --tag casjaysdev/go:test .
 
 ## 📄 License
 
-MIT
+MIT — see [LICENSE.md](LICENSE.md)
 
 ---
 
