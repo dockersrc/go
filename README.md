@@ -25,7 +25,7 @@ Mount your project at `/app` and run with no arguments. The container
 automatically runs the full Go workflow:
 
 ```
-go mod tidy  →  gofmt -w .  →  go vet ./...  →  go test ./...  →  go build ./...
+go mod tidy  →  gofmt -w .  →  go vet ./...  →  govulncheck ./...  →  go test ./...  →  go build ./...
 ```
 
 ```shell

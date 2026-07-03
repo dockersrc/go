@@ -61,9 +61,11 @@ run_step "go mod tidy" go mod tidy
 run_step "gofmt -w ." gofmt -w .
 # 3. Catch suspicious constructs
 run_step "go vet ./..." go vet ./...
-# 4. Run tests — fail fast before wasting time on a build
+# 4. Scan dependencies against the Go vulnerability database
+run_step "govulncheck ./..." govulncheck ./...
+# 5. Run tests — fail fast before wasting time on a build
 run_step "go test ./..." go test ./...
-# 5. Build all main packages; output lands alongside source in each package dir
+# 6. Build all main packages; output lands alongside source in each package dir
 run_step "go build ./..." go build "${BUILD_FLAGS[@]}" ./...
 
 echo "✅ Done."
