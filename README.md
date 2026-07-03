@@ -180,6 +180,13 @@ volumes:
 | `ko` | Build Go container images without a Dockerfile |
 | `air` | Live-reload dev server for iterative development |
 
+### License & SBOM
+
+| Tool | Purpose |
+|------|---------|
+| `go-licenses` | Scan all dependencies and report their licenses |
+| `cyclonedx-gomod` | Generate a CycloneDX SBOM from a Go module |
+
 ### Language server
 
 | Tool | Purpose |

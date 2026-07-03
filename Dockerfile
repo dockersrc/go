@@ -46,7 +46,9 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/tools/cmd/goim
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/google/wire/cmd/wire@latest && \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install go.uber.org/mock/mockgen@latest && \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/google/go-licenses@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest
 
 FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
