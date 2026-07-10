@@ -24,6 +24,174 @@ Files updated:
 
 ---
 
+## Template System Reference
+
+This section documents the current state of `templates/dockerfiles/` and key
+`bin/gen-dockerfile` variables. Keep it in sync whenever upstream templates change.
+
+### Template inventory
+
+| Template | Final stage | Init / PID 1 | Base OS |
+|----------|-------------|--------------|---------|
+| `alpine.template` | `scratch.template` | tini | Alpine |
+| `debian.template` | `scratch.template` | tini | Debian |
+| `ubuntu.template` | `scratch.template` | tini | Ubuntu |
+| `rhel.template` | `scratch.template` | tini | AlmaLinux |
+| `archlinux.template` | `scratch.template` | tini | Arch Linux (see multi-arch note) |
+| `web.template` | `systemd.template` | `/sbin/init` | Debian |
+| `xorg.template` | `systemd.template` | `/sbin/init` | Debian |
+
+### Final-stage templates
+
+`scratch.template` — used by all non-GUI templates.
+- `ENTRYPOINT [ "tini", "-p", "SIGTERM","--", "/usr/local/bin/entrypoint.sh" ]`
+- `STOPSIGNAL SIGRTMIN+3`
+
+`systemd.template` — used by `web` and `xorg` (systemd runs as PID 1; tini is redundant).
+- `ENTRYPOINT [ "/sbin/init" ]`
+- `STOPSIGNAL SIGRTMIN+3`
+- No `tini_provider` stage, no `COPY --from=tini_provider` line.
+
+Both templates are identical apart from `ENTRYPOINT`. OCI labels, `ENV HOSTNAME`, and
+`VOLUME`/`EXPOSE`/`HEALTHCHECK` are the same in both.
+
+### OCI label standard
+
+Both `scratch.template` and `systemd.template` emit these labels (no others):
+
+```
+LABEL maintainer="${GEN_DOCKERFILE_MAINTAINER}"
+LABEL org.opencontainers.image.vendor="${GEN_DOCKERFILE_VENDOR:-CasjaysDev}"
+LABEL org.opencontainers.image.authors="${GEN_DOCKERFILE_AUTHOR:-CasjaysDev}"
+LABEL org.opencontainers.image.licenses="${LICENSE}"
+LABEL org.opencontainers.image.title="${IMAGE_NAME}"
+LABEL org.opencontainers.image.description="Containerized version of ${IMAGE_NAME}"
+LABEL org.opencontainers.image.created="${BUILD_DATE}"
+LABEL org.opencontainers.image.version="${BUILD_VERSION}"
+LABEL org.opencontainers.image.revision="${GIT_COMMIT}"
+LABEL org.opencontainers.image.url="${GEN_DOCKERFILE_HUB_REPO}"
+LABEL org.opencontainers.image.source="${GEN_DOCKERFILE_GIT_REPO}"
+LABEL org.opencontainers.image.documentation="${GEN_DOCKERFILE_GIT_REPO}"
+LABEL org.opencontainers.image.vcs-type="Git"
+LABEL com.github.containers.toolbox="false"
+```
+
+Shell-expanded values (no `\`) are evaluated at template-render time by
+`gen-dockerfile`. Dollar-escaped values (`\${...}`) become literal Docker
+`ARG`/`ENV` references in the generated `Dockerfile`.
+
+Removed labels (do not re-add):
+- `org.opencontainers.image.base.name` — belongs on the base image, not the app image
+- `org.opencontainers.image.schema-version` — non-spec; redundant with `version`
+- Any duplicate `authors` or `source` entries
+
+### HOSTNAME convention
+
+All templates set `ENV HOSTNAME="casjaysdevdocker-${IMAGE_NAME}"` in every stage
+that declares it. The prefix is always `casjaysdevdocker-`, never `casjaysdev-`.
+
+### `GEN_DOCKERFILE_APP_DIR` and pull URL logic
+
+`GEN_DOCKERFILE_APP_DIR` is auto-detected in `bin/gen-dockerfile` from the parent
+directory of `$PWD` (i.e. the GitHub org the project lives in):
+
+```bash
+GEN_DOCKERFILE_APP_DIR="${GEN_DOCKERFILE_APP_DIR:-$(basename -- "$(dirname -- "$PWD")")}"
+```
+
+It controls which base images `GEN_DOCKER_SPECIFY_IMAGE_SOURCE_*` default to:
+
+```bash
+if [ "${GEN_DOCKERFILE_APP_DIR}" = "casjaysdevdocker" ]; then
+  # Pull from pre-built casjaysdev/* base images on Docker Hub
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_RHEL="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_RHEL:-casjaysdev/almalinux}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ALPINE="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ALPINE:-casjaysdev/alpine}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_DEBIAN="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_DEBIAN:-casjaysdev/debian}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_UBUNTU="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_UBUNTU:-casjaysdev/ubuntu}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ARCHLINUX="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ARCHLINUX:-casjaysdev/archlinux}"
+else
+  # Pull from upstream official images (dockersrc/* builds its own base images)
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_RHEL="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_RHEL:-almalinux}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ALPINE="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ALPINE:-alpine}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_DEBIAN="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_DEBIAN:-debian}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_UBUNTU="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_UBUNTU:-ubuntu}"
+  GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ARCHLINUX="${GEN_DOCKER_SPECIFY_IMAGE_SOURCE_ARCHLINUX:-archlinux}"
+fi
+```
+
+Summary:
+- `casjaysdevdocker/*` repos → `FROM casjaysdev/<distro>:latest` (already multi-arch)
+- `dockersrc/*` and all other orgs → `FROM <distro>:latest` (upstream official images)
+
+The Docker Hub push org (`casjaysdev`) is unchanged regardless of `GEN_DOCKERFILE_APP_DIR`.
+
+### Toolchain build stages are exempt from the pull-URL org rule
+
+Language toolchain images (e.g. `dockersrc/go`) add a dedicated build stage that pulls a
+pre-built upstream toolchain image directly, independent of `PULL_URL`/`GEN_DOCKERFILE_APP_DIR`:
+
+```dockerfile
+FROM --platform=$BUILDPLATFORM golang:alpine AS go-tools
+```
+
+This is intentional and correct — it speeds up building the toolchain (e.g. Go binaries) by
+reusing an official prebuilt image with the compiler already installed, rather than installing it
+from scratch in the `PULL_URL` base stage. Do not change these stages to use `PULL_URL` or route
+them through `GEN_DOCKERFILE_APP_DIR` logic; they are a separate concern from the OS base image.
+
+### Arch Linux multi-arch (`archlinux.template`)
+
+When `GEN_DOCKERFILE_APP_DIR != "casjaysdevdocker"` (i.e. building a base image in
+`dockersrc/archlinux`), the template emits a three-stage FROM to support both
+`linux/amd64` and `linux/arm64`:
+
+```dockerfile
+ARG TARGETARCH
+ARG TARGETPLATFORM
+FROM --platform=${TARGETPLATFORM} archlinux:latest AS base-amd64
+FROM --platform=${TARGETPLATFORM} lopsided/archlinux-arm64v8:latest AS base-arm64
+FROM base-${TARGETARCH} AS build
+```
+
+When `GEN_DOCKERFILE_APP_DIR = "casjaysdevdocker"`, `casjaysdev/archlinux` is a
+multi-arch manifest so a single `FROM ${PULL_URL}:${DISTRO_VERSION} AS build` suffices.
+
+### `web.template` packages
+
+The `web` template installs the following systemd + noVNC stack in the build stage:
+
+```
+systemd systemd-sysv dbus dbus-x11 procps
+tigervnc-standalone-server novnc openbox xdotool
+```
+
+Default ports: `SERVICE_PORT="5800"`, `EXPOSE_PORTS="5800 5900"`.
+
+### `xorg.template` packages
+
+The `xorg` template installs the following systemd + Xorg stack in the build stage:
+
+```
+systemd systemd-sysv dbus dbus-x11 procps
+xserver-xorg x11-xserver-utils xinit
+```
+
+### `debian.template` / `ubuntu.template` — RUN continuation fix
+
+The first `RUN` block must have `; \` after the `echo` line so
+`export DEBIAN_FRONTEND=noninteractive` executes before `apt-get`:
+
+```dockerfile
+RUN set -e; \
+  echo "Updating the system"; \
+  export DEBIAN_FRONTEND=noninteractive; \
+  apt-get update && apt-get upgrade -yy && apt-get dist-upgrade -yy
+```
+
+Without the `; \` the export is a no-op and `apt-get` may prompt interactively.
+
+---
+
 ## Tool Reference
 
 ### `gen-dockerfile`
@@ -104,6 +272,11 @@ else
   REPO_TYPE="app"
   org="casjaysdevdocker"
 fi
+
+# GEN_DOCKERFILE_APP_DIR is auto-detected by gen-dockerfile from the parent of $PWD.
+# For repos under casjaysdevdocker/: pull base from casjaysdev/* (pre-built multi-arch).
+# For repos under dockersrc/ or any other org: pull from upstream official images.
+# Override by setting GEN_DOCKERFILE_APP_DIR in the environment before calling gen-dockerfile.
 ```
 
 ---
@@ -381,8 +554,8 @@ dockermgr update {name}
 ## Install and run container
 
 ```shell
-dockerHome="/var/lib/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs"
-mkdir -p "/var/lib/srv/$USER/docker/{name}/rootfs"
+dockerHome="/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs"
+mkdir -p "/srv/$USER/docker/{name}/rootfs"
 git clone "https://github.com/dockermgr/{name}" "$HOME/.local/share/CasjaysDev/dockermgr/{name}"
 cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/{name}/rootfs/." "$dockerHome/"
 docker run -d \
@@ -409,8 +582,8 @@ services:
       - TZ=America/New_York
       - HOSTNAME={name}
     volumes:
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs/data:/data:z"
-      - "/var/lib/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs/config:/config:z"
+      - "/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs/data:/data:z"
+      - "/srv/$USER/docker/casjaysdevdocker/{name}/{name}/latest/rootfs/config:/config:z"
     ports:
       - {port}:{port}
     restart: always
@@ -465,17 +638,17 @@ dockermgr update os {name}
 ## Install and run container
 
 ```shell
-mkdir -p "/var/lib/srv/root/docker/casjaysdev/{name}/latest"
+mkdir -p "/srv/root/docker/casjaysdev/{name}/latest"
 git clone "https://github.com/dockermgr/{name}" "$HOME/.local/share/CasjaysDev/dockermgr/{name}"
-cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/{name}/rootfs/." "/var/lib/srv/root/docker/casjaysdev/{name}/latest/"
+cp -Rfva "$HOME/.local/share/CasjaysDev/dockermgr/{name}/rootfs/." "/srv/root/docker/casjaysdev/{name}/latest/"
 docker run -d \
 --restart always \
 --privileged \
 --name casjaysdev-{name}-latest \
 --hostname {name} \
 -e TZ=${TIMEZONE:-America/New_York} \
--v "/var/lib/srv/root/docker/casjaysdev/{name}/latest/data:/data:z" \
--v "/var/lib/srv/root/docker/casjaysdev/{name}/latest/config:/config:z" \
+-v "/srv/root/docker/casjaysdev/{name}/latest/data:/data:z" \
+-v "/srv/root/docker/casjaysdev/{name}/latest/config:/config:z" \
 casjaysdev/{name}:latest
 ```
 
@@ -491,8 +664,8 @@ services:
       - TZ=America/New_York
       - HOSTNAME={name}
     volumes:
-      - "/var/lib/srv/root/docker/casjaysdev/{name}/latest/data:/data:z"
-      - "/var/lib/srv/root/docker/casjaysdev/{name}/latest/config:/config:z"
+      - "/srv/root/docker/casjaysdev/{name}/latest/data:/data:z"
+      - "/srv/root/docker/casjaysdev/{name}/latest/config:/config:z"
     restart: always
 ```
 

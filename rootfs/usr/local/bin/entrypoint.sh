@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202606261500-git
+##@Version           :  202607082023-git
 # @@Author           :  Jason Hempstead
 # @@Contact          :  jason@casjaysdev.pro
 # @@License          :  WTFPL
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2026 Jason Hempstead, Casjays Developments
-# @@Created          :  Friday, May 29, 2026 22:19 EDT
+# @@Created          :  Thursday, Jul 09, 2026 20:21 EDT
 # @@File             :  entrypoint.sh
-# @@Description      :  Entrypoint file for alpine
+# @@Description      :  Entrypoint file for go
 # @@Changelog        :  New script
 # @@TODO             :  Better documentation
-# @@Other            :
-# @@Resource         :
+# @@Other            :  
+# @@Resource         :  
 # @@Terminal App     :  no
 # @@sudo/root        :  no
 # @@Template         :  other/docker-entrypoint
@@ -28,11 +28,11 @@ trap 'retVal=$?;[ "$SERVICE_IS_RUNNING" != "yes" ] && [ -f "$SERVICE_PID_FILE" ]
 [ -f "/config/.debug" ] && [ -z "$DEBUGGER_OPTIONS" ] && export DEBUGGER_OPTIONS="$(<"/config/.debug")" || DEBUGGER_OPTIONS="${DEBUGGER_OPTIONS:-}"
 if [ "$DEBUGGER" = "on" ] || [ -f "/config/.debug" ]; then
   echo "Enabling debugging"
-  set -o pipefail
+  set -eo pipefail
   [ -n "$DEBUGGER_OPTIONS" ] && set -"$DEBUGGER_OPTIONS"
   export DEBUGGER="on"
 else
-  set -o pipefail
+  set -eo pipefail
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 PATH="/usr/local/etc/docker/bin:/usr/local/bin:/usr/bin:/usr/sbin:/bin:/sbin"
@@ -95,8 +95,8 @@ SERVICE_UID="${SERVICE_UID:-0}"
 SERVICE_GID="${SERVICE_GID:-0}"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # User and group in which the service switches to - IE: nginx,apache,mysql,postgres
-#SERVICE_USER="${SERVICE_USER:-alpine}"   # execute command as another user
-#SERVICE_GROUP="${SERVICE_GROUP:-alpine}" # Set the service group
+#SERVICE_USER="${SERVICE_USER:-go}"   # execute command as another user
+#SERVICE_GROUP="${SERVICE_GROUP:-go}" # Set the service group
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Secondary ports
 # specifiy other ports
@@ -108,7 +108,7 @@ WEB_SERVER_PORT=""
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Healthcheck variables
 # enable healthcheck [yes/no]
-HEALTH_ENABLED="${HEALTH_ENABLED:-yes}"
+HEALTH_ENABLED="yes"
 # comma separated list of processes for the healthcheck
 SERVICES_LIST="tini"
 # url endpoints: [http://localhost/health,http://localhost/test]
@@ -123,7 +123,7 @@ export PATH RUNAS_USER SERVICE_USER SERVICE_GROUP SERVICE_UID SERVICE_GID WWW_RO
 # show message
 __run_message() {
 
-  return
+  return 0
 }
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 ################## END OF CONFIGURATION #####################
@@ -155,9 +155,6 @@ export SSL_CA="${SSL_CA:-/config/ssl/ca.crt}"
 export SSL_KEY="${SSL_KEY:-/config/ssl/localhost.pem}"
 export SSL_CERT="${SSL_CERT:-/config/ssl/localhost.crt}"
 export LOCAL_BIN_DIR="${LOCAL_BIN_DIR:-/usr/local/bin}"
-export DEFAULT_DATA_DIR="${DEFAULT_DATA_DIR:-/usr/local/share/template-files/data}"
-export DEFAULT_CONF_DIR="${DEFAULT_CONF_DIR:-/usr/local/share/template-files/config}"
-export DEFAULT_TEMPLATE_DIR="${DEFAULT_TEMPLATE_DIR:-/usr/local/share/template-files/defaults}"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # Backup settings
 export BACKUP_MAX_DAYS="${BACKUP_MAX_DAYS:-}"
@@ -214,15 +211,15 @@ else
 fi
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # clean ENV_PORTS variables
-ENV_PORTS="${ENV_PORTS//,/ }"  #
-ENV_PORTS="${ENV_PORTS//\/*/}" #
+ENV_PORTS="${ENV_PORTS//,/ }"
+ENV_PORTS="${ENV_PORTS//\/*/}"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # clean SERVER_PORTS variables
-SERVER_PORTS="${SERVER_PORTS//,/ }"  #
-SERVER_PORTS="${SERVER_PORTS//\/*/}" #
+SERVER_PORTS="${SERVER_PORTS//,/ }"
+SERVER_PORTS="${SERVER_PORTS//\/*/}"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # clean WEB_SERVER_PORTS variables
-WEB_SERVER_PORTS="${WEB_SERVER_PORT//,/ } ${ENV_WEB_SERVER_PORTS//,/ }" #
+WEB_SERVER_PORTS="${WEB_SERVER_PORT//,/ } ${ENV_WEB_SERVER_PORTS//,/ }"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
 # rewrite and merge variables
 ENV_PORTS="$(__format_variables "$ENV_PORTS" || false)"
@@ -373,7 +370,7 @@ if [ "$ENTRYPOINT_FIRST_RUN" != "no" ]; then
   # - - - - - - - - - - - - - - - - - - - - - - - - -
   # import hosts file into container
   if [ -f "/usr/local/etc/hosts" ] && [ "$UPDATE_FILE_HOSTS" = "yes" ]; then
-    grep -vF "$HOSTNAME" "/usr/local/etc/hosts" 2>/dev/null >>"/etc/hosts" || true
+    grep -vF -- "$HOSTNAME" "/usr/local/etc/hosts" 2>/dev/null >>"/etc/hosts" || true
   fi
   # - - - - - - - - - - - - - - - - - - - - - - - - -
   # import resolv.conf file into container
@@ -425,8 +422,8 @@ if [ "$ENTRYPOINT_FIRST_RUN" != "no" ] || [ "$CONFIG_DIR_INITIALIZED" = "no" ] |
     echo "Initialized on: $INIT_DATE" >"$ENTRYPOINT_INIT_FILE" 2>/dev/null || true
   fi
   # - - - - - - - - - - - - - - - - - - - - - - - - -
-  # setup the smtp server — non-fatal; this image does not use ssmtp
-  __setup_mta || true
+  # setup the smtp server
+  __setup_mta
   # - - - - - - - - - - - - - - - - - - - - - - - - -
   ENTRYPOINT_FIRST_RUN="no"
 fi
@@ -491,11 +488,9 @@ if [ "$START_SERVICES" = "yes" ] || [ -z "$1" ]; then
     echo "$$" >"$ENTRYPOINT_PID_FILE"
     __start_init_scripts "/usr/local/etc/docker/init.d"
     CONTAINER_INIT="${CONTAINER_INIT:-no}"
-    # No user command: run default Go workflow instead of blocking
-    if [ $# -eq 0 ]; then
-      go-workflow "$@"
-      exit $?
-    fi
+    # Services started successfully - enter monitoring mode
+    __no_exit
+    exit $?
   fi
   START_SERVICES="no"
 fi
@@ -581,7 +576,7 @@ healthcheck)
         services+="$name "
       done
     fi
-    services="$(printf '%s\n' $services | sort -u | grep -v '^$')"
+    services="$(printf '%s\n' $services | sort -u | grep -v -- '^$')"
     for proc in $services; do
       if [ -n "$proc" ]; then
         if ! __pgrep "$proc"; then
@@ -592,7 +587,7 @@ healthcheck)
     done
     for port in $healthPorts; do
       if command -v netstat &>/dev/null && [ -n "$port" ]; then
-        if ! netstat -taupln | grep -q ":$port "; then
+        if ! netstat -taupln | grep -q -- ":$port "; then
           echo "$port isn't open" >&2
           healthStatus=$((healthStatus + 1))
         fi
@@ -622,29 +617,25 @@ ports)
   # show running processes
 procs)
   shift 1
-  ps="$(__ps axco command 2>/dev/null | grep -vE '^(COMMAND|grep|ps)$' | sort -u)"
+  ps="$(__ps axco command 2>/dev/null | grep -vE -- '^(COMMAND|grep|ps)$' | sort -u)"
   [ -n "$ps" ] && printf '%s\n%s\n' "Found the following processes" "$ps" | tr '\n' ' '
   exit $?
   ;;
 # Launch shell
 */bin/sh | */bin/bash | bash | sh | shell)
-  shell_bin="$(type -P "${1}" 2>/dev/null || echo "/bin/bash")"
   shift 1
-  if [ $# -gt 0 ]; then
-    __exec_command "$shell_bin" "$@"
-  else
-    __exec_command "$shell_bin" -l
-  fi
+  __exec_command "$@"
   exit $?
   ;;
 # execute commands
 exec)
   shift 1
   if [ $# -eq 0 ]; then
-    echo "Error: exec requires a command" >&2
+    echo "No command given to exec" >&2
     exit 1
   fi
-  exec "$@"
+  __exec_command "$@"
+  exit $?
   ;;
 # show/start init scripts
 start)
@@ -669,11 +660,15 @@ start)
 # Execute primary command
 *)
   if [ $# -eq 0 ]; then
-    # No args: run the default Go workflow (tidy → fmt → vet → test → build)
-    exec go-workflow
+    if [ ! -f "$ENTRYPOINT_PID_FILE" ]; then
+      echo "$$" >"$ENTRYPOINT_PID_FILE"
+      [ "$START_SERVICES" = "no" ] && [ "$CONTAINER_INIT" = "yes" ] || __start_init_scripts "/usr/local/etc/docker/init.d"
+    fi
+    __no_exit
   else
-    exec "$@"
+    __exec_command "$@"
   fi
+  exit $?
   ;;
 esac
 # - - - - - - - - - - - - - - - - - - - - - - - - -
