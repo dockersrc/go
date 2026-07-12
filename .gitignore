@@ -206,6 +206,8 @@ tmp/
 *.tmp
 *.cache
 .cache/
+!rootfs/tmp/
+!rootfs/tmp/**
 
 ### Test and coverage ###
 coverage/

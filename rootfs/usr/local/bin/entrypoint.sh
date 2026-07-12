@@ -7,7 +7,7 @@
 # @@License          :  WTFPL
 # @@ReadME           :  entrypoint.sh --help
 # @@Copyright        :  Copyright: (c) 2026 Jason Hempstead, Casjays Developments
-# @@Created          :  Thursday, Jul 09, 2026 20:21 EDT
+# @@Created          :  Saturday, Jul 11, 2026 23:13 EDT
 # @@File             :  entrypoint.sh
 # @@Description      :  Entrypoint file for go
 # @@Changelog        :  New script
