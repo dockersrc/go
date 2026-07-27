@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202607112314-git
+##@Version           :  202607130230-git
 # @@Author           :  CasjaysDev
 # @@Contact          :  CasjaysDev <docker-admin@casjaysdev.pro>
 # @@License          :  WTFPL
 # @@Copyright        :  Copyright 2026 CasjaysDev
-# @@Created          :  Sat Jul 11 11:14:28 PM EDT 2026
+# @@Created          :  Mon Jul 13 02:30:57 AM EDT 2026
 # @@File             :  02-packages.sh
 # @@Description      :  script to run packages
 # @@Changelog        :  newScript

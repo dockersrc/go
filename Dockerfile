@@ -30,6 +30,10 @@ ARG BUILD_VERSION="${BUILD_DATE}"
 
 FROM tianon/gosu:latest AS gosu
 
+# Go toolchain matching the final image's target platform (not the build host).
+# Copied verbatim into the build stage so the image ships an actual go compiler.
+FROM golang:alpine AS go-toolchain
+
 # Build Go tools natively on the host platform using Go's cross-compilation.
 # This avoids QEMU emulation for arm64 and reduces compile time from hours to minutes.
 FROM --platform=$BUILDPLATFORM golang:alpine AS go-tools
@@ -78,7 +82,7 @@ ARG PHP_SERVER
 ARG SHELL_OPTS
 ARG PATH
 
-ARG PACK_LIST="git make bash tini ca-certificates openssh-client curl wget tar tzdata jq build-base gcc musl-dev pkgconf openssl-dev libffi-dev zlib-dev linux-headers protobuf protobuf-dev "
+ARG PACK_LIST="bash-completion git curl wget sudo unzip iproute2 msmtp openssl jq tzdata mailcap ncurses ncurses-terminfo-base util-linux pciutils usbutils coreutils binutils findutils grep rsync zip tar tini py3-pip procps net-tools sed gawk attr readline lsof less shadow ca-certificates make openssh-client build-base gcc musl-dev pkgconf openssl-dev libffi-dev zlib-dev linux-headers protobuf protobuf-dev "
 
 ENV ENV=~/.profile
 ENV SHELL="/bin/sh"
@@ -101,15 +105,26 @@ ENV GITHUB_TOKEN="${GITHUB_TOKEN}"
 USER ${USER}
 WORKDIR /root
 
+RUN set -e; \
+  echo "Updating the system"; \
+  apk upgrade --no-cache
+
 COPY ./rootfs/. /
 
 RUN set -e; \
-  echo "Updating the system and ensuring bash is installed"; \
-  pkmgr update;pkmgr install bash
+  echo "Ensuring bash and system certs are installed"; \
+  pkmgr install bash ca-certificates; \
+  update-ca-certificates
 
 RUN set -e; \
   echo "Setting up prerequisites"; \
-  true
+  apk --no-cache add bash; \
+  SH_CMD="$(which sh 2>/dev/null||command -v sh 2>/dev/null)"; \
+  BASH_CMD="$(which bash 2>/dev/null||command -v bash 2>/dev/null)"; \
+  [ -x "$BASH_CMD" ] && symlink "$BASH_CMD" "/bin/sh" || true; \
+  [ -x "$BASH_CMD" ] && symlink "$BASH_CMD" "/usr/bin/sh" || true; \
+  [ -x "$BASH_CMD" ] && [ "$SH_CMD" != "/bin/sh" ] && symlink "$BASH_CMD" "$SH_CMD" || true; \
+  [ -n "$BASH_CMD" ] && sed -i 's|root:x:.*|root:x:0:0:root:/root:'$BASH_CMD'|g' "/etc/passwd" || true
 
 ENV SHELL="/bin/bash"
 SHELL [ "/bin/bash", "-c" ]
@@ -187,6 +202,7 @@ RUN echo "Custom Applications"; \
   $SHELL_OPTS; \
 echo ""
 
+COPY --from=go-toolchain /usr/local/go/ /usr/local/go/
 COPY --from=go-tools /go/bin/ /usr/local/bin/
 
 RUN echo "Running custom commands"; \

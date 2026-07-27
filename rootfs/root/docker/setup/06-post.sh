@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-##@Version           :  202607112314-git
+##@Version           :  202607130230-git
 # @@Author           :  CasjaysDev
 # @@Contact          :  CasjaysDev <docker-admin@casjaysdev.pro>
 # @@License          :  WTFPL
 # @@Copyright        :  Copyright 2026 CasjaysDev
-# @@Created          :  Sat Jul 11 11:14:29 PM EDT 2026
+# @@Created          :  Mon Jul 13 02:30:58 AM EDT 2026
 # @@File             :  06-post.sh
 # @@Description      :  script to run post
 # @@Changelog        :  newScript
