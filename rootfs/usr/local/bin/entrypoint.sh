@@ -626,9 +626,11 @@ procs)
   [ -n "$ps" ] && printf '%s\n%s\n' "Found the following processes" "$ps" | tr '\n' ' '
   exit $?
   ;;
-# Launch shell
+# Launch shell — do not shift here: "sh -c 'cmd'" / "bash -c 'cmd'" needs the
+# interpreter name kept as argv[0] for __exec_command's `exec "$@"` to work;
+# shifting it away turned "sh -c 'cmd'" into `exec -c cmd` (command not found)
 */bin/sh | */bin/bash | bash | sh | shell)
-  shift 1
+  [ "$1" = "shell" ] && shift 1
   __exec_command "$@"
   exit $?
   ;;
