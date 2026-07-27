@@ -629,9 +629,20 @@ procs)
 # Launch shell — do not shift here: "sh -c 'cmd'" / "bash -c 'cmd'" needs the
 # interpreter name kept as argv[0] for __exec_command's `exec "$@"` to work;
 # shifting it away turned "sh -c 'cmd'" into `exec -c cmd` (command not found)
-*/bin/sh | */bin/bash | bash | sh | shell)
-  [ "$1" = "shell" ] && shift 1
+*/bin/sh | */bin/bash | bash | sh)
   __exec_command "$@"
+  exit $?
+  ;;
+# "shell" is a keyword, not a real interpreter — it must be shifted away, and
+# any remaining args need "sh" prepended so __exec_command's `exec "$@"` gets
+# a real interpreter instead of trying to exec "-c" as a program
+shell)
+  shift 1
+  if [ $# -eq 0 ]; then
+    __exec_command
+  else
+    __exec_command sh "$@"
+  fi
   exit $?
   ;;
 # execute commands
