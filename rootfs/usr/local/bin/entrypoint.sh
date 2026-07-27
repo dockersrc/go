@@ -422,8 +422,10 @@ if [ "$ENTRYPOINT_FIRST_RUN" != "no" ] || [ "$CONFIG_DIR_INITIALIZED" = "no" ] |
     echo "Initialized on: $INIT_DATE" >"$ENTRYPOINT_INIT_FILE" 2>/dev/null || true
   fi
   # - - - - - - - - - - - - - - - - - - - - - - - - -
-  # setup the smtp server
-  __setup_mta
+  # setup the smtp server — non-fatal; __symlink requires the target to
+  # pre-exist so __find_replace on a not-yet-created /etc/msmtprc returns 1,
+  # which kills the script under set -e if not guarded here
+  __setup_mta || true
   # - - - - - - - - - - - - - - - - - - - - - - - - -
   ENTRYPOINT_FIRST_RUN="no"
 fi
