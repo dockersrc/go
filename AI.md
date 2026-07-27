@@ -336,6 +336,19 @@ This covers: `rootfs/usr/local/bin/entrypoint.sh`, `rootfs/usr/local/bin/pkmgr`,
 generates. The copy condition (`-f "$dest"`) means files not already in this repo are not
 added — only existing files are updated.
 
+**`05-custom.sh` is app-specific content, not boilerplate — never blind-copy it.** The
+upstream template's `05-custom.sh` is an empty stub (the `# Main script` section has no
+body); this repo's real content — the Go/tool install logic (`__gh_latest`, `__install_tar`,
+`__install_bin` helpers, and the goreleaser/golangci-lint/staticcheck/gofumpt/gotestsum/
+ko/air/buf/goose installs) — lives only in this repo's git history, not in the template.
+Before overwriting `rootfs/root/docker/setup/05-custom.sh` from the temp dir, diff the temp
+dir's version against the current repo version; if the temp dir version is materially
+shorter/emptier, treat it like a Step 3/4 app-specific file: keep the existing body, and
+only pull forward genuine boilerplate changes (version-stamp header, `set` line, shellcheck
+disable line). This mirrors Step 3's handling of app-specific `rootfs/usr/local/bin/*`
+scripts — apply the same rule to any other `0*.sh` setup script found to contain real
+install logic beyond the stub.
+
 ---
 
 ## Step 3 — Update app-specific bin scripts
