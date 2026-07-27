@@ -481,8 +481,11 @@ SKIP_SERVICE_START="no"
 [ "$1" = "init" ] && SKIP_SERVICE_START="yes" && CONTAINER_INIT="yes"
 [ "$2" = "init" ] && SKIP_SERVICE_START="yes" && CONTAINER_INIT="yes"
 # - - - - - - - - - - - - - - - - - - - - - - - - -
-# Start all services if no pidfile and not skipping
-if [ "$START_SERVICES" = "yes" ] || [ -z "$1" ]; then
+# Start all services only when no command was given at all — an explicit
+# command (exec, shell, tail, or an arbitrary program) must reach the case
+# statement below instead of being swallowed into daemon/monitor mode, even
+# on a first run where START_SERVICES is force-set to "yes"
+if [ -z "$1" ]; then
   if [ "$SKIP_SERVICE_START" = "no" ]; then
     [ "$1" = "start" ] && shift 1
     [ "$1" = "all" ] && shift 1
