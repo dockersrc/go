@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # Docker image for go using the alpine template
 ARG IMAGE_NAME="go"
 ARG PHP_SERVER="go"
@@ -58,9 +59,6 @@ FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
 ARG USER
 ARG LICENSE
-# Optional: pass --build-arg GITHUB_TOKEN=$(gh auth token) to raise the API rate
-# limit from 60 to 5000 req/hr — avoids 403s in parallel multi-platform builds.
-ARG GITHUB_TOKEN=""
 ARG TIMEZONE
 ARG LANGUAGE
 ARG IMAGE_NAME
@@ -100,7 +98,6 @@ ENV GOTOOLCHAIN="auto"
 ENV GOFLAGS="-buildvcs=false"
 ENV GOTELEMETRY="off"
 ENV GOPROXY="https://proxy.golang.org,direct"
-ENV GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 USER ${USER}
 WORKDIR /root
@@ -205,7 +202,12 @@ echo ""
 COPY --from=go-toolchain /usr/local/go/ /usr/local/go/
 COPY --from=go-tools /go/bin/ /usr/local/bin/
 
-RUN echo "Running custom commands"; \
+# GITHUB_TOKEN is passed as a BuildKit secret, not ARG/ENV, so its value never
+# persists in image layers or is visible via `docker history` — pass with
+# `docker buildx build --secret id=github_token,env=GITHUB_TOKEN` (optional,
+# only raises the GitHub API rate limit from 60 to 5000 req/hr).
+RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN,required=false \
+  echo "Running custom commands"; \
   if [ -f "/root/docker/setup/05-custom.sh" ];then echo "Running the custom script";/root/docker/setup/05-custom.sh||{ echo "Failed to execute /root/docker/setup/05-custom.sh" && exit 10; };echo "Done running the custom script";fi; \
   echo ""
 
