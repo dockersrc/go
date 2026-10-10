@@ -156,12 +156,6 @@ __install_tar \
 curl -fsSL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh \
   | sh -s -- -b "${CUSTOM_GOBIN_DIR}" latest
 
-# staticcheck — standalone advanced static analyser (linux_amd64 / linux_arm64)
-_SC_VER="$(__gh_latest dominikh/go-tools)"
-__install_tar \
-  "https://github.com/dominikh/go-tools/releases/download/${_SC_VER}/staticcheck_linux_${_GOARCH}.tar.gz" \
-  "staticcheck"
-
 # gofumpt — stricter formatter; asset name includes version: gofumpt_v0.x.y_linux_amd64
 _GF_VER="$(__gh_latest mvdan/gofumpt)"
 __install_bin \
@@ -202,9 +196,10 @@ __install_bin \
   "goose"
 
 # go install tools (goimports, stringer, gopls, govulncheck, dlv, gops, benchstat,
-# wire, mockgen, protoc-gen-go, protoc-gen-go-grpc) are cross-compiled natively on
-# the build platform in the Dockerfile go-tools stage and copied to /usr/local/bin
-# before this script runs — no QEMU-emulated compilation needed here.
+# wire, mockgen, protoc-gen-go, protoc-gen-go-grpc, go-licenses, cyclonedx-gomod,
+# staticcheck) are cross-compiled natively on the build platform in the Dockerfile
+# go-tools stage and copied to /usr/local/bin before this script runs — no
+# QEMU-emulated compilation needed here.
 
 # Strip the module download cache and ephemeral build cache from this layer
 go clean -modcache

@@ -37,6 +37,15 @@ FROM golang:alpine AS go-toolchain
 
 # Build Go tools natively on the host platform using Go's cross-compilation.
 # This avoids QEMU emulation for arm64 and reduces compile time from hours to minutes.
+#
+# staticcheck is pinned to @master, not @latest, as a temporary measure: the
+# latest tagged release (2026.2.1) bundles an x/tools importer that only reads
+# export-data format up to version 4, but the latest Go release now emits
+# version 5, so the tagged binary fails every run with "export data version 5
+# is greater than maximum supported version 4". go-tools' master branch
+# already has the fix (bumped its x/tools dependency to v0.51.0 for unified v5
+# export data support) but no new tag has shipped yet. Switch this back to
+# staticcheck@latest once dominikh/go-tools cuts a release containing that fix.
 FROM --platform=$BUILDPLATFORM golang:alpine AS go-tools
 ARG TARGETOS=linux
 ARG TARGETARCH
@@ -53,7 +62,8 @@ RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install golang.org/x/tools/cmd/goim
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest && \
     GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/google/go-licenses@latest && \
-    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install github.com/CycloneDX/cyclonedx-gomod/cmd/cyclonedx-gomod@latest && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go install honnef.co/go/tools/cmd/staticcheck@master
 
 FROM ${PULL_URL}:${DISTRO_VERSION} AS build
 ARG TZ
